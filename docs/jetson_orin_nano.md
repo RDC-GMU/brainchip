@@ -15,21 +15,36 @@ This guide covers the specific requirements and steps for installing and running
 
 Brainchip's software requires an `aarch64` Linux distribution. On the Orin Nano, this means utilizing NVIDIA JetPack.
 
-- **Recommended Version:** Use the latest stable NVidia JetPack (6.x series) running Ubuntu 22.04. 
-- **Install Dependencies:** Setup the foundational compilers, Jetson-specific libraries, and Python configurations by running our provided installation script:
+- **Recommended JetPack version:** Latest stable JetPack (6.x series) running Ubuntu 22.04.
+- **Required Python version:** 3.10 to 3.12 (MetaTF 2.17+ does **not** support Python 3.9).
+- **Install Dependencies:** Set up the foundational compilers, Jetson-specific libraries, and Python environment by running:
   ```bash
   ./scripts/install_dependencies.sh
   ```
 
-## 3. TensorFlow on Jetson (Crucial Step)
+> **Tip:** It is strongly recommended to use a virtual environment. With Conda:
+> ```bash
+> conda create --name akida_env python=3.11
+> conda activate akida_env
+> ```
 
-Because the Jetson utilizes an ARM-based architecture with a Tegra GPU, you **cannot** simply run `pip install tensorflow` like on a standard desktop. You must install NVIDIA's specialized Jetson TensorFlow build *before* installing MetaTF, otherwise pip will install an incompatible CPU-only binary. Wait for the `install_dependencies.sh` script to successfully finish preparing your Jetson environment before proceeding.
+## 3. TensorFlow / TF-Keras on Jetson (Crucial Step)
 
-1. Install the Official NVIDIA TensorFlow Wheel. Ensure the JetPack version matches the index URL.
-   ```bash
-   pip3 install --pre --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v60 dp-tensorflow
-   ```
-   *(Check the NVIDIA Developer Forums for the exact index link matching your specific JetPack OS version).*
+MetaTF 2.17+ requires **TF-Keras 2.19** (bundled with TensorFlow 2.19). Because the Jetson uses an ARM-based Tegra GPU, you **cannot** simply run `pip install tensorflow` and get a GPU-accelerated build.
+
+> **Note:** MetaTF 2.16 was the last release supporting TensorFlow 2.15 / Keras 2 / Python 3.9. If you are starting fresh, install MetaTF 2.17+.
+
+Install TF-Keras for `aarch64` before installing MetaTF:
+```bash
+pip3 install tf-keras==2.19
+```
+
+For full GPU acceleration via CUDA on Jetson, also install NVIDIA's compatible TensorFlow build. Check the [NVIDIA JetPack TensorFlow index](https://developer.download.nvidia.com/compute/redist/jp/) for the wheel matching your JetPack version:
+```bash
+# Example for JetPack 6.x — verify the exact URL against your JetPack version:
+pip3 install --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v61 tensorflow
+```
+*(Check the [NVIDIA Developer Forums](https://forums.developer.nvidia.com/) for the exact index URL matching your specific JetPack version.)*
 
 ## 4. Driver Installation
 
@@ -48,13 +63,15 @@ Because JetPack utilizes custom L4T kernel headers, ensure they are present befo
 
 ## 5. Installing MetaTF
 
-With the specialized Jetson TensorFlow installed and the Brainchip drivers loaded, you can finally install MetaTF.
-
-Instead of running `pip install -r requirements.txt` directly, install the MetaTF components manually to avoid overriding your Jetson-specific TensorFlow build:
+With TF-Keras installed and the Brainchip PCIe drivers loaded, install the MetaTF packages. Install components **individually** (not via `pip install -r requirements.txt`) to avoid pip overwriting your Jetson-specific TensorFlow build:
 
 ```bash
-pip3 install akida cnn2snn quantizeml akida-models
+pip3 install akida==2.19.1
+pip3 install cnn2snn==2.19.1
+pip3 install akida-models==1.13.1
 ```
+
+> **Version note:** These are the latest stable versions as of the MetaTF 2.19 release. Check [doc.brainchipinc.com](https://doc.brainchipinc.com/) for the most current pinned versions.
 
 Finally, execute the test script to confirm hardware execution:
 ```bash
@@ -80,15 +97,33 @@ sudo nvpmodel -m 0
 - **What Went Wrong**: It was correctly assumed that standard Linux PCIe power management (ASPM) was putting the Co-processor to sleep causing the timeouts. However, the bootloader was modified by adding *both* `pcie_aspm=off` AND `iommu.passthrough=1` to the `/boot/extlinux/extlinux.conf` file. The Orin Nano's ARM64 architecture is fiercely strict on memory, so forcing IOMMU passthrough at the bootloader level on a Tegra kernel completely broke DMA routing and caused a catastrophic kernel panic during boot.
 - **The Fix**: The 128GB external USB drive was pulled, mounted directly on another computer, and the bad kernel arguments were manually deleted from the text file to restore the boot sequence.
 
-### Phase 5: Safely Fixing the PCIe Timeout
-The `error reading at 0xf0000010 len: 4 errno(110): Connection timed out` must simply be cleared without bricking the device. Since you reverted your bootloader changes in Phase 4, the default ASPM power states are once again putting the card to sleep.
+### Phase 5: The PCIe Timeout — What NOT to Do
 
-You have two options for safely resolving this:
-1. **The Temporary Runtime Fix:** Run the new reset script provided in this repository before launching python. This pings the sysfs tree and forces the card to wake up without rebooting the Jetson:
+> ⚠️ **CRITICAL: Do NOT use `pcie_aspm=off` as a global kernel boot argument on Jetson Orin Nano.**
+
+The `error reading at 0xf0000010 len: 4 errno(110): Connection timed out` error was observed when the Brainchip AKD1000 card enters a deep PCIe ASPM sleep state.
+
+Attempts were made to fix this by appending `pcie_aspm=off` to `/boot/extlinux/extlinux.conf`. **This bricked the Jetson twice and required two full OS reflashes.** The Jetson Orin Nano's NVMe SSD shares the same PCIe root complex as the M.2 slot — disabling ASPM globally severs the kernel's connection to the NVMe drive at boot, causing an unrecoverable `partition id not found` failure.
+
+**Safe approaches to the timeout issue:**
+
+1. **Warm reset (try this first):** The `resetpcie.sh` script performs a driver unload → PCIe bus remove → rescan → driver reload without any reboot or bootloader changes:
    ```bash
    ./scripts/resetpcie.sh
    ```
-2. **The Permanent Boot Fix:** You can successfully disable ASPM at the bootloader level to fix the timeout permanently, just **DO NOT** include the IOMMU argument! Safely append *only* `pcie_aspm=off` to the `APPEND` line in `/boot/extlinux/extlinux.conf`.
+
+2. **Targeted ASPM disable (advanced):** If the timeout persists, disable ASPM *only* on the Akida device's specific PCIe slot — not the whole bus — using `setpci`. First, find the device's BDF address:
+   ```bash
+   lspci -D | grep -iE "Brainchip|Akida|Co-processor"
+   ```
+   Then disable ASPM only on that device (replace `<BDF>` with the address found above):
+   ```bash
+   sudo setpci -s <BDF> CAP_EXP+10.w=0000
+   ```
+
+3. **Reseat the hardware:** A loose M.2 card can cause intermittent timeout errors. Power off, reseat the AKD1000, and re-run `./scripts/check_hardware.sh`.
+
+The `apply_boot_fix.sh` script has been removed from this repository and must not be recreated.
 
 ## 7. Key Takeaways: What Not to Do in the Future
 

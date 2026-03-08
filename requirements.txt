@@ -1,7 +1,7 @@
-tensorflow==2.15.0
-keras==2.15.0
-akida==2.16.1
-cnn2snn==2.16.1
-akida-models
-quantizeml~=0.19.0
+# MetaTF 2.19 - Python 3.10 to 3.12 required
+# See: https://doc.brainchipinc.com/ for the latest supported versions
+tf-keras==2.19
+akida==2.19.1
+cnn2snn==2.19.1
+akida-models==1.13.1
 numpy
