@@ -1,46 +1,95 @@
-# Testing Your Brainchip AKD1000 M.2 setup
+# Testing Your Brainchip AKD1000 M.2 Setup
 
-After following the `README.md` to physically install the hardware and its associated `MetaTF` packages, you should verify the connection and driver installation are successful.
+After physically installing the hardware and running the setup scripts, use the following steps to verify the driver and MetaTF stack are working correctly.
 
-The `tests/` and `scripts/` directories include specific test scripts to validate your setup.
+## 1. Validate Driver & PCIe Connection (`check_hardware.sh`)
 
-## 1. Validating Driver & PCIe connection (`check_hardware.sh`)
+Run the hardware check script, which performs four checks in sequence:
 
-First, ensure the operating system detects your hardware and loads the required driver properly.
-
-Run the hardware shell script:
 ```bash
 ./scripts/check_hardware.sh
 ```
 
 **What this checks:**
-- **PCIe Bus (`lspci`)**: Validates the Akida coprocessor operates on the host's PCI bus. If not found, your M.2 card is either loosely attached, missing power, or fundamentally incompatible with the socket.
-- **Kernel Module (`lsmod`)**: Ensure `akida-pcie.ko` is properly built via DKMS and currently loaded by the OS.
-- **Device Virtual Files (`/dev`)**: Ensures a special device file (`/dev/akidaX`) map exists, which is required for user-space access (your Python code) to communicate directly with hardware.
 
-## 2. Validating MetaTF Stack (`test_akida.py`)
+| # | Check | Tool | Expected Result |
+|---|---|---|---|
+| 1 | PCIe bus | `lspci` | `Co-processor: Device 1e7c:bca1 (rev 01)` |
+| 2 | Kernel module loaded | `lsmod` | `akida` module present |
+| 3 | Device node exists | `/dev/akida*` | `/dev/akida0` visible |
+| 4 | MetaTF hardware enumeration | `akida devices` | `PCIe/NSoC_v2` listed |
 
-Once you verify the OS sees the hardware underneath, run the Python library tests to make sure `akida` software correctly parses and connects to the active execution device.
+Check 4 (`akida devices`) is the canonical confirmation from the official Brainchip install guide — if it shows a `PCIe/` entry, your full stack is working end-to-end.
 
-*Make sure your Python environment with `MetaTF` is active first.*
+## 2. Validate MetaTF Python Stack (`test_akida.py`)
+
+Once the hardware check passes, run the Python test to confirm the `akida` library can bind to the hardware device (not software simulation):
 
 ```bash
 python tests/test_akida.py
 ```
 
 **What this checks:**
-- **Imports `akida` successfully**: Fails immediately if `akida` or underlying dependencies (e.g. `tensorflow`) throw errors.
-- **Query hardware (`akida.devices()`)**: Uses `akida` to scan for execution nodes natively. It should print out descriptions indicating successful binding. If the output states it will use "software simulation," your hardware is not being identified by MetaTF.
+- `akida` imports correctly (no missing dependency errors)
+- `akida.devices()` returns a hardware device — **not** software emulation
+
+---
 
 ## Troubleshooting
 
-- **Hardware not found by `check_hardware.sh`**:
-   - Reseat the AKD1000 M.2 unit into your motherboard's socket.
-   - Verify the PCIE switch for your M.2 slot is not conflicting with another occupied port on the motherboard (common in ITX systems).
+### `lspci` gives no results (Check 1 fails)
 
-- **`akida-pcie` kernel module not found**:
-   - Attempt to manually insert it using `sudo modprobe akida-pcie`.
-   - If that fails, re-run `sudo make install` inside your driver folder, confirming there were no `gcc` or Linux headers compilation issues.
+The Akida card is not visible on the PCIe bus.
 
-- **`test_akida.py` says Software Emulation**:
-   - Ensure you add your user to any necessary groups (`video` or `dialout` or create `udev` rules based on documentation) so `MetaTF` isn't denied permission to write to `/dev/akida0`. Running the script once with `sudo python tests/test_akida.py` and seeing if it finds the hardware will confirm if it is a permissions issue.
+1. **Power the machine fully off** (not just restart).
+2. Reseat the AKD1000 M.2 card firmly into its slot — it is a one-lane card but fits into 2-, 4-, or 8-lane slots. Ensure the back edge of the card extends past the PCIe connector.
+3. Power back on and re-run `./scripts/check_hardware.sh`.
+
+### `akida-pcie` kernel module not loaded (Check 2 fails)
+
+```bash
+sudo modprobe akida-pcie
+```
+
+If that fails, the driver was not installed correctly. Re-run the installer:
+
+```bash
+./scripts/install_drivers.sh
+```
+
+### `/dev/akida*` not found (Check 3 fails)
+
+The driver loaded but did not attach to the hardware cleanly. Run the PCIe reset utility:
+
+```bash
+./scripts/resetpcie.sh
+```
+
+### `akida devices` shows no PCIe device (Check 4 fails)
+
+Two possible causes:
+
+- **MetaTF version too old:** You must have MetaTF `>= 2.2.0`. The current recommended version is `2.19.1`. Upgrade:
+  ```bash
+  pip3 install akida==2.19.1
+  ```
+- **Permissions issue:** The `/dev/akida0` node may not be accessible to your user. The official `install.sh` sets udev rules automatically, but confirm by testing with sudo:
+  ```bash
+  sudo akida devices
+  ```
+  If this works but the non-sudo version doesn't, your user needs to be added to the appropriate group or the udev rules need to be reloaded:
+  ```bash
+  sudo udevadm control --reload-rules && sudo udevadm trigger
+  ```
+
+### `RuntimeError: unexpected transfer len: 1 expected: 4`
+
+This is a known transient PCIe communication error. Run the reset utility in a separate terminal and retry:
+
+```bash
+./scripts/resetpcie.sh
+```
+
+### System stuck / applications not responding
+
+Reboot the system fully. If a low-level PCIe operation fails, an immediate restart may carry ghost errors into the next session — always unplug power and wait ~60 seconds before rebooting.
