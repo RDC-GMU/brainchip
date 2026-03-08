@@ -15,7 +15,7 @@ Run the hardware shell script:
 
 **What this checks:**
 - **PCIe Bus (`lspci`)**: Validates the Akida coprocessor operates on the host's PCI bus. If not found, your M.2 card is either loosely attached, missing power, or fundamentally incompatible with the socket.
-- **Kernel Module (`lsmod`)**: Ensure `akida.ko` is properly built via DKMS and currently loaded by the OS.
+- **Kernel Module (`lsmod`)**: Ensure `akida-pcie.ko` is properly built via DKMS and currently loaded by the OS.
 - **Device Virtual Files (`/dev`)**: Ensures a special device file (`/dev/akidaX`) map exists, which is required for user-space access (your Python code) to communicate directly with hardware.
 
 ## 2. Validating MetaTF Stack (`test_akida.py`)
@@ -38,8 +38,8 @@ python tests/test_akida.py
    - Reseat the AKD1000 M.2 unit into your motherboard's socket.
    - Verify the PCIE switch for your M.2 slot is not conflicting with another occupied port on the motherboard (common in ITX systems).
 
-- **`akida` kernel module not found**:
-   - Attempt to manually insert it using `sudo modprobe akida`.
+- **`akida-pcie` kernel module not found**:
+   - Attempt to manually insert it using `sudo modprobe akida-pcie`.
    - If that fails, re-run `sudo make install` inside your driver folder, confirming there were no `gcc` or Linux headers compilation issues.
 
 - **`test_akida.py` says Software Emulation**:

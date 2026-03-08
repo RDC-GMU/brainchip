@@ -16,21 +16,16 @@ This guide covers the specific requirements and steps for installing and running
 Brainchip's software requires an `aarch64` Linux distribution. On the Orin Nano, this means utilizing NVIDIA JetPack.
 
 - **Recommended Version:** Use the latest stable NVidia JetPack (6.x series) running Ubuntu 22.04. 
-- Ensure your OS packages are up to date:
+- **Install Dependencies:** Setup the foundational compilers, Jetson-specific libraries, and Python configurations by running our provided installation script:
   ```bash
-  sudo apt update && sudo apt upgrade -y
+  ./scripts/install_dependencies.sh
   ```
 
 ## 3. TensorFlow on Jetson (Crucial Step)
 
-Because the Jetson utilizes an ARM-based architecture with a Tegra GPU, you **cannot** simply run `pip install tensorflow` like on a standard desktop. You must install NVIDIA's specialized Jetson TensorFlow build *before* installing MetaTF, otherwise pip will install an incompatible CPU-only binary.
+Because the Jetson utilizes an ARM-based architecture with a Tegra GPU, you **cannot** simply run `pip install tensorflow` like on a standard desktop. You must install NVIDIA's specialized Jetson TensorFlow build *before* installing MetaTF, otherwise pip will install an incompatible CPU-only binary. Wait for the `install_dependencies.sh` script to successfully finish preparing your Jetson environment before proceeding.
 
-1. Ensure pip and system dependencies are ready:
-   ```bash
-   sudo apt install -y python3-pip python3-dev libhdf5-serial-dev hdf5-tools libjpeg8-dev
-   pip3 install -U pip setuptools
-   ```
-2. Install the Official NVIDIA TensorFlow Wheel. Ensure the JetPack version matches the index URL.
+1. Install the Official NVIDIA TensorFlow Wheel. Ensure the JetPack version matches the index URL.
    ```bash
    pip3 install --pre --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v60 dp-tensorflow
    ```

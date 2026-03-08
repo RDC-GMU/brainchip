@@ -38,9 +38,9 @@ else
 fi
 
 echo ""
-echo "4. Loading the 'akida' Module..."
-sudo modprobe -r akida || true
-sudo modprobe akida
+echo "4. Loading the 'akida-pcie' Module..."
+sudo modprobe -r akida-pcie || true
+sudo modprobe akida-pcie
 
 echo ""
 echo "5. Cleaning up..."

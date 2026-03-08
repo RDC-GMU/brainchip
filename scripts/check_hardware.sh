@@ -22,8 +22,8 @@ echo "2. Checking Akida Kernel Module..."
 MODULE_OUTPUT=$(lsmod | grep akida 2>/dev/null)
 
 if [ -z "$MODULE_OUTPUT" ]; then
-    echo "Error: The 'akida' kernel module is not loaded."
-    echo "        Please install the driver and load it using 'sudo modprobe akida'."
+    echo "Error: The 'akida-pcie' kernel module is not loaded."
+    echo "        Please install the driver and load it using 'sudo modprobe akida-pcie'."
     echo ""
 else
     echo "Success: The 'akida' kernel module is loaded."

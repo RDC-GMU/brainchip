@@ -39,7 +39,13 @@ Alternatively, you can manually clone the [BrainChip GitHub repository](https://
 
 MetaTF is the machine learning framework used to build, train, quantize, and convert models to run on Akida neuromorphic hardware. 
 
-1. **Python Environment Setup**: 
+1. **Install System Dependencies**:
+   Before configuring Python, ensure your base system has the required compilers, headers, and Python extensions. Run our automated setup script:
+   ```bash
+   ./scripts/install_dependencies.sh
+   ```
+
+2. **Python Environment Setup**: 
    - It is strongly advised to use Python between `3.10` and `3.12`.
    - Setup a dedicated virtual environment using `conda` or `venv` to avoid version conflicts.
    ```bash
@@ -47,7 +53,7 @@ MetaTF is the machine learning framework used to build, train, quantize, and con
    source akida_env/bin/activate
    ```
 
-2. **Install Package Requirements**:
+3. **Install Package Requirements**:
    You can cleanly install the MetaTF suite and its TensorFlow dependencies using the `requirements.txt` file provided in this directory.
 
    ```bash
