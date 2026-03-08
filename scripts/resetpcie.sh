@@ -15,14 +15,29 @@ if [ -z "$PCI_ID" ]; then
 fi
 
 echo "Found Akida Co-processor at PCIe address: $PCI_ID"
-echo "Sending reset signal to /sys/bus/pci/devices/$PCI_ID/reset..."
+echo "Performing a full PCIe bus remove and rescan..."
 
-# Trigger the PCIe bus reset
-sudo sh -c "echo 1 > /sys/bus/pci/devices/$PCI_ID/reset"
+# Unload the driver first
+echo "Unloading akida-pcie driver..."
+sudo modprobe -r akida-pcie || true
+
+# Remove the device from the PCIe bus
+echo "Removing device at $PCI_ID..."
+sudo sh -c "echo 1 > /sys/bus/pci/devices/$PCI_ID/remove"
+sleep 1
+
+# Rescan the PCIe bus to wake up the slot
+echo "Rescanning PCIe bus..."
+sudo sh -c "echo 1 > /sys/bus/pci/rescan"
+sleep 1
+
+# Reload the driver
+echo "Reloading akida-pcie driver..."
+sudo modprobe akida-pcie
 
 if [ $? -eq 0 ]; then
     echo ""
-    echo "Success: PCIe reset signal sent."
+    echo "Success: Full PCIe device reset completed."
     echo "You should now be able to run 'python tests/test_akida.py' without timeout errors."
 else
     echo ""
