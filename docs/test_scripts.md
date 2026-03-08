@@ -6,6 +6,7 @@ The following table documents the test scripts provided in the `tests/` director
 | :--- | :--- | :--- |
 | `install_dependencies.sh` | Updates system packages and installs prerequisites like Python, pip, and Jetson-specific dependencies (if running on a Tegra-based architecture). | `./scripts/install_dependencies.sh` |
 | `install_drivers.sh` | Automatically installs prerequisites, clones the Akida driver repository, builds, and loads the kernel module. | `./scripts/install_drivers.sh` |
+| `resetpcie.sh` | Resolves hardware communication errors (like 'Connection timed out' at 0xf0000010) without fully rebooting the host machine. | `./scripts/resetpcie.sh` |
 | `check_hardware.sh` | Validates the physical M.2 card installation, ensures the PCIe bus detects the device, checks that the `akida` kernel driver module is loaded, and confirms the `/dev/akida*` characters devices are created by the OS. | `./scripts/check_hardware.sh` |
 | `test_akida.py` | Tests the MetaTF Python environment setup. It verifies the Python package imports correctly and successfully identifies and attaches to the physical hardware execution node rather than resorting to software simulation. | `python tests/test_akida.py` |
 

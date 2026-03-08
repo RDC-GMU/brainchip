@@ -77,8 +77,18 @@ sudo nvpmodel -m 0
 
 ### Phase 4: The PCIe Timeout and Kernel Panic
 - **What Happened**: The Python script successfully reached the hardware driver, but threw a `Connection timed out` error at memory address `0xf0000010`. In an attempt to fix this hardware timeout, editing the Jetson's bootloader caused the Jetson to instantly go into an endless reboot loop.
-- **What Went Wrong**: Assuming the timeout was caused by standard Linux PCIe power management (ASPM) or the System Memory Management Unit (SMMU) blocking third-party access, the bootloader was modified by adding `pcie_aspm=off iommu.passthrough=1` to the `/boot/extlinux/extlinux.conf` file. However, the Orin Nano's ARM64 architecture is fiercely strict. Forcing IOMMU passthrough at the bootloader level on a Tegra kernel caused a catastrophic kernel panic during boot.
+- **What Went Wrong**: It was correctly assumed that standard Linux PCIe power management (ASPM) was putting the Co-processor to sleep causing the timeouts. However, the bootloader was modified by adding *both* `pcie_aspm=off` AND `iommu.passthrough=1` to the `/boot/extlinux/extlinux.conf` file. The Orin Nano's ARM64 architecture is fiercely strict on memory, so forcing IOMMU passthrough at the bootloader level on a Tegra kernel completely broke DMA routing and caused a catastrophic kernel panic during boot.
 - **The Fix**: The 128GB external USB drive was pulled, mounted directly on another computer, and the bad kernel arguments were manually deleted from the text file to restore the boot sequence.
+
+### Phase 5: Safely Fixing the PCIe Timeout
+The `error reading at 0xf0000010 len: 4 errno(110): Connection timed out` must simply be cleared without bricking the device. Since you reverted your bootloader changes in Phase 4, the default ASPM power states are once again putting the card to sleep.
+
+You have two options for safely resolving this:
+1. **The Temporary Runtime Fix:** Run the new reset script provided in this repository before launching python. This pings the sysfs tree and forces the card to wake up without rebooting the Jetson:
+   ```bash
+   ./scripts/resetpcie.sh
+   ```
+2. **The Permanent Boot Fix:** You can successfully disable ASPM at the bootloader level to fix the timeout permanently, just **DO NOT** include the IOMMU argument! Safely append *only* `pcie_aspm=off` to the `APPEND` line in `/boot/extlinux/extlinux.conf`.
 
 ## 7. Key Takeaways: What Not to Do in the Future
 
