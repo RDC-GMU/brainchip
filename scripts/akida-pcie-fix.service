@@ -1,0 +1,36 @@
+[Unit]
+Description=Brainchip AKD1000 PCIe ASPM Fix for Jetson
+# Run after PCI bus enumeration but before user sessions
+After=systemd-modules-load.service
+After=systemd-udev-settle.service
+Before=multi-user.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# The fix script path assumes the repo is cloned to ~/Documents/brainchip
+# Adjust ExecStart if your installation path differs.
+ExecStart=/bin/bash -c '\
+    PCI_ID=$(lspci -D | grep -iE "Co-processor.*Brainchip|Brainchip.*Co-processor|AKD1000|Akida" | awk "{print \\$1}" | head -1); \
+    if [ -z "$PCI_ID" ]; then exit 0; fi; \
+    DOMAIN_BUS=$(echo "$PCI_ID" | sed "s/\\(.*\\):.*/\\1/"); \
+    ROOT_PORT="${DOMAIN_BUS}:00.0"; \
+    \
+    modprobe -r akida_pcie 2>/dev/null || true; \
+    sleep 1; \
+    \
+    LNKCTL=$(setpci -s "$PCI_ID" CAP_EXP+10.w 2>/dev/null || echo ""); \
+    [ -n "$LNKCTL" ] && setpci -s "$PCI_ID" CAP_EXP+10.w=$(printf "%%04x" $(( 0x$LNKCTL & 0xFFFC ))); \
+    \
+    LNKCTL_RP=$(setpci -s "$ROOT_PORT" CAP_EXP+10.w 2>/dev/null || echo ""); \
+    [ -n "$LNKCTL_RP" ] && setpci -s "$ROOT_PORT" CAP_EXP+10.w=$(printf "%%04x" $(( 0x$LNKCTL_RP & 0xFFFC ))); \
+    \
+    [ -f "/sys/bus/pci/devices/$PCI_ID/power/control" ] && echo on > /sys/bus/pci/devices/$PCI_ID/power/control; \
+    [ -f "/sys/bus/pci/devices/$ROOT_PORT/power/control" ] && echo on > /sys/bus/pci/devices/$ROOT_PORT/power/control; \
+    \
+    modprobe akida_pcie; \
+    sleep 2; \
+    ls /dev/akida* >/dev/null 2>&1 && echo "akida-pcie-fix: device ready" || echo "akida-pcie-fix: device not found"'
+
+[Install]
+WantedBy=multi-user.target

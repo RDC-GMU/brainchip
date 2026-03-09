@@ -28,23 +28,17 @@ Brainchip's software requires an `aarch64` Linux distribution. On the Orin Nano,
 > conda activate akida_env
 > ```
 
-## 3. TensorFlow / TF-Keras on Jetson (Crucial Step)
+## 3. TensorFlow / TF-Keras
 
-MetaTF 2.17+ requires **TF-Keras 2.19** (bundled with TensorFlow 2.19). Because the Jetson uses an ARM-based Tegra GPU, you **cannot** simply run `pip install tensorflow` and get a GPU-accelerated build.
+> **Key insight:** The AKD1000 M.2 card **is** the ML inference co-processor. All neural network execution happens on the Akida chip in hardware. The Jetson's CPU only runs Python and handles pre/post-processing. **NVIDIA GPU-accelerated TensorFlow is not required.**
 
-> **Note:** MetaTF 2.16 was the last release supporting TensorFlow 2.15 / Keras 2 / Python 3.9. If you are starting fresh, install MetaTF 2.17+.
+Standard `tf-keras` from PyPI works on Jetson's `aarch64` architecture and is all that is needed:
 
-Install TF-Keras for `aarch64` before installing MetaTF:
 ```bash
 pip3 install tf-keras==2.19
 ```
 
-For full GPU acceleration via CUDA on Jetson, also install NVIDIA's compatible TensorFlow build. Check the [NVIDIA JetPack TensorFlow index](https://developer.download.nvidia.com/compute/redist/jp/) for the wheel matching your JetPack version:
-```bash
-# Example for JetPack 6.x — verify the exact URL against your JetPack version:
-pip3 install --extra-index-url https://developer.download.nvidia.com/compute/redist/jp/v61 tensorflow
-```
-*(Check the [NVIDIA Developer Forums](https://forums.developer.nvidia.com/) for the exact index URL matching your specific JetPack version.)*
+This is consistent with how Brainchip's own Raspberry Pi developer kit guide sets up the environment — CPU-only TensorFlow, with the Akida handling all inference workloads. The `install_dependencies.sh` script in this repository handles this automatically.
 
 ## 4. Driver Installation
 
