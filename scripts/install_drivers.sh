@@ -44,8 +44,13 @@ echo ""
 # ──────────────────────────────────────────────
 # Step 2.5: Bypass official Makefile version check
 # ──────────────────────────────────────────────
-echo "Step 2.5: Patching Makefile to bypass strict kernel version limits..."
-sed -i 's/^.*$(error Kernel.*not supported.*/$(warning Kernel version check bypassed)/g' "$CLONE_DIR/Makefile"
+echo "Step 2.5: Patching Makefile to support newer kernels (6.x+)..."
+
+# The Makefile checks upper bounds via a sorted list. If we simply delete the
+# error, the include paths for virt-dma.h are skipped. We must rewrite the
+# 6.9 upper limit to 99.99 so the 5.16+ configuration is correctly applied
+# to kernel 6.17 and beyond.
+sed -i 's/6\.9/99.99/g' "$CLONE_DIR/Makefile"
 
 echo ""
 
