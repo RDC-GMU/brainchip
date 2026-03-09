@@ -27,7 +27,23 @@ echo ""
 echo "Step 1: Updating system packages..."
 sudo apt update
 sudo apt upgrade -y
-sudo apt install -y python3-pip python3-dev python3-venv build-essential
+sudo apt install -y build-essential software-properties-common
+
+echo "Step 1.1: Ensuring Python 3.10 or 3.11 is available (MetaTF compatibility)..."
+if command -v python3.11 &>/dev/null; then
+    PY_CMD="python3.11"
+elif command -v python3.10 &>/dev/null; then
+    PY_CMD="python3.10"
+else
+    echo "  Python 3.10/3.11 not found in PATH. Adding deadsnakes PPA to install Python 3.11..."
+    sudo add-apt-repository ppa:deadsnakes/ppa -y || echo "  [WARN] Failed to add PPA, continuing anyway..."
+    sudo apt update
+    sudo apt install -y python3.11 python3.11-venv python3.11-dev
+    PY_CMD="python3.11"
+fi
+
+# Ensure the venv and dev packages for the selected version are installed
+sudo apt install -y "${PY_CMD}-venv" "${PY_CMD}-dev" || true
 
 if [ "$IS_JETSON" = true ]; then
     echo "  Installing Jetson-specific system dependencies..."
@@ -46,9 +62,9 @@ if [ -d "$VENV_DIR" ]; then
     echo "  Virtual environment already exists. Skipping creation."
 else
     if [ "$IS_JETSON" = true ]; then
-        python3 -m venv "$VENV_DIR" --system-site-packages
+        $PY_CMD -m venv "$VENV_DIR" --system-site-packages
     else
-        python3 -m venv "$VENV_DIR"
+        $PY_CMD -m venv "$VENV_DIR"
     fi
     echo "  Created: $VENV_DIR"
 fi
