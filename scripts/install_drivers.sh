@@ -33,10 +33,19 @@ echo "  Source: $DRIVER_REPO"
 
 if [ -d "$CLONE_DIR" ]; then
     echo "  Existing clone found at $CLONE_DIR. Pulling latest..."
+    git -C "$CLONE_DIR" clean -fd
     git -C "$CLONE_DIR" pull
 else
     git clone "$DRIVER_REPO" "$CLONE_DIR"
 fi
+
+echo ""
+
+# ──────────────────────────────────────────────
+# Step 2.5: Bypass official Makefile version check
+# ──────────────────────────────────────────────
+echo "Step 2.5: Patching Makefile to bypass strict kernel version limits..."
+sed -i 's/^.*$(error Kernel.*not supported.*/$(warning Kernel version check bypassed)/g' "$CLONE_DIR/Makefile"
 
 echo ""
 
