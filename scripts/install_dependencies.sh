@@ -29,19 +29,38 @@ sudo apt update
 sudo apt upgrade -y
 sudo apt install -y build-essential software-properties-common
 
-echo "Step 1.1: Ensuring Python 3.10 or 3.11 is available (MetaTF compatibility)..."
-if command -v python3.11 &>/dev/null; then
-    PY_CMD="python3.11"
-elif command -v python3.10 &>/dev/null; then
-    PY_CMD="python3.10"
-else
-    echo "  Python 3.10/3.11 not found in PATH. Adding deadsnakes PPA to install Python 3.11..."
-    sudo add-apt-repository ppa:deadsnakes/ppa -y || echo "  [WARN] Failed to add PPA, continuing anyway..."
-    sudo apt update
-    sudo apt install -y python3.11 python3.11-venv python3.11-dev
-    PY_CMD="python3.11"
+echo "Step 1.1: Ensuring Python 3.10, 3.11, or 3.12 is available (MetaTF compatibility)..."
+PY_CMD=""
+for py in python3.12 python3.11 python3.10; do
+    if command -v "$py" &>/dev/null; then
+        PY_CMD="$py"
+        break
+    fi
+done
+
+if [ -z "$PY_CMD" ]; then
+    echo "  Python 3.10-3.12 not found in PATH."
+    echo "  Attempting to install Python 3.12 from standard repos..."
+    sudo apt install -y python3.12 python3.12-venv python3.12-dev || true
+    
+    if command -v python3.12 &>/dev/null; then
+        PY_CMD="python3.12"
+    else
+        echo "  [ERROR] MetaTF 2.19.1 does not support Python 3.13+ yet, and"
+        echo "  no older Python versions could be installed via apt."
+        echo ""
+        echo "  Please use Miniconda to create an environment with a supported Python version:"
+        echo "    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"
+        echo "    bash Miniconda3-latest-Linux-x86_64.sh -b -p \$HOME/miniconda3"
+        echo "    source \$HOME/miniconda3/bin/activate"
+        echo "    conda create -y -n akida_env python=3.12"
+        echo "    conda activate akida_env"
+        echo "    pip install tf-keras==2.19 akida==2.19.1 cnn2snn==2.19.1 akida-models==1.13.1"
+        exit 1
+    fi
 fi
 
+echo "  Selected Python interpreter: $PY_CMD"
 # Ensure the venv and dev packages for the selected version are installed
 sudo apt install -y "${PY_CMD}-venv" "${PY_CMD}-dev" || true
 
