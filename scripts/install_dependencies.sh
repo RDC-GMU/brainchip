@@ -25,8 +25,8 @@ echo ""
 # Step 1: System packages
 # ──────────────────────────────────────────────
 echo "Step 1: Updating system packages..."
-sudo apt update
-sudo apt upgrade -y
+sudo apt update || true
+sudo apt upgrade -y || true
 sudo apt install -y build-essential software-properties-common
 
 echo "Step 1.1: Ensuring Python 3.10, 3.11, or 3.12 is available (MetaTF compatibility)..."
