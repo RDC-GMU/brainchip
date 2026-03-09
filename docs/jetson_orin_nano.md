@@ -1,28 +1,29 @@
-# Brainchip AKD1000 M.2 on NVIDIA Jetson Orin Nano
+# Brainchip AKD1000 M.2 on NVIDIA Jetson Orin NX
 
-The Brainchip AKD1000 PCIe/M.2 module is highly compatible with the NVIDIA Jetson Orin Nano since the Jetson utilizes an `aarch64` processor architecture and features an exposed M.2 M-key PCIe slot underneath the carrier board.
+The Brainchip AKD1000 PCIe/M.2 module is compatible with the NVIDIA Jetson Orin NX, which features an exposed M.2 M-key PCIe slot on the carrier board.
 
-This guide covers the specific requirements and steps for installing and running MetaTF on a Jetson Orin Nano.
+This guide covers Jetson-specific installation requirements, TensorFlow setup for `aarch64`, and a complete troubleshooting log of every failure mode encountered during bring-up.
 
 ## 1. Physical Hardware Installation
 
-1. Prepare your Jetson Orin Nano Developer Kit. Make sure it is completely powered off and unplugged.
-2. Locate the M.2 Key-M NVMe slot underneath the carrier board. Note: If you have already flashed the Jetson OS to an NVMe SSD installed in this slot, you must boot from a USB Stick instead to free up the PCIe slot for the Akida coprocessor.
-3. Insert the Brainchip AKD1000 M.2 into the M.2 Key-M slot and screw it securely into the standoff. 
-4. Insert your flashed USB Stick (containing JetPack) and power on the system.
+1. Prepare your Jetson Orin NX. Make sure it is completely powered off and unplugged.
+2. Locate the M.2 Key-M NVMe slot on the carrier board.
+
+   > **Note:** If you have already installed an NVMe SSD in this slot, you must boot the Jetson from a USB stick instead to free up the slot for the Akida card.
+
+3. Insert the AKD1000 M.2 card and screw it into the standoff.
+4. Power on the system.
 
 ## 2. NVIDIA JetPack & System Requirements
 
-Brainchip's software requires an `aarch64` Linux distribution. On the Orin Nano, this means utilizing NVIDIA JetPack.
-
-- **Recommended JetPack version:** Latest stable JetPack (6.x series) running Ubuntu 22.04.
-- **Required Python version:** 3.10 to 3.12 (MetaTF 2.17+ does **not** support Python 3.9).
-- **Install Dependencies:** Set up the foundational compilers, Jetson-specific libraries, and Python environment by running:
+- **Recommended JetPack version:** Latest stable JetPack 6.x (Ubuntu 22.04 aarch64)
+- **Required Python version:** 3.10 to 3.12 (MetaTF 2.17+ does **not** support Python 3.9)
+- **Install dependencies:**
   ```bash
   ./scripts/install_dependencies.sh
   ```
 
-> **Tip:** It is strongly recommended to use a virtual environment. With Conda:
+> **Tip:** Use a virtual environment with Conda:
 > ```bash
 > conda create --name akida_env python=3.11
 > conda activate akida_env
@@ -30,83 +31,86 @@ Brainchip's software requires an `aarch64` Linux distribution. On the Orin Nano,
 
 ## 3. TensorFlow / TF-Keras
 
-> **Key insight:** The AKD1000 M.2 card **is** the ML inference co-processor. All neural network execution happens on the Akida chip in hardware. The Jetson's CPU only runs Python and handles pre/post-processing. **NVIDIA GPU-accelerated TensorFlow is not required.**
+> **Key insight:** The AKD1000 **is** the ML inference co-processor. All neural network execution happens in hardware on the Akida chip. The Jetson's CPU only runs Python pre/post-processing. **NVIDIA GPU-accelerated TensorFlow is not required.**
 
-Standard `tf-keras` from PyPI works on Jetson's `aarch64` architecture and is all that is needed:
+Standard `tf-keras` from PyPI works on Jetson's `aarch64` architecture:
 
 ```bash
-pip3 install tf-keras==2.19
+pip install tf-keras==2.19
 ```
 
-This is consistent with how Brainchip's own Raspberry Pi developer kit guide sets up the environment — CPU-only TensorFlow, with the Akida handling all inference workloads. The `install_dependencies.sh` script in this repository handles this automatically.
+The `install_dependencies.sh` script in this repository handles this automatically.
 
 ## 4. Driver Installation
 
-Once your software environment is prepped, install the PCIe driver using the provided auto-installer script in this repository.
+Install the PCIe driver using the provided script:
 
-Because JetPack utilizes custom L4T kernel headers, ensure they are present before proceeding:
+```bash
+./scripts/install_drivers.sh
+```
 
-1. Run the Brainchip installer script:
-    ```bash
-    ./scripts/install_drivers.sh
-    ```
-2. Run the hardware check to verify the Jetson PCIe bus recognizes the AKD1000:
-    ```bash
-    ./scripts/check_hardware.sh
-    ```
+Because JetPack uses a custom L4T kernel, the script automatically detects Tegra architecture and installs `nvidia-l4t-kernel-headers` instead of standard `linux-headers`. After installation:
+
+```bash
+./scripts/check_hardware.sh
+```
+
+> **Important:** After every kernel update (`apt upgrade`), re-run `install_drivers.sh`. The official Brainchip driver does **not** use DKMS.
 
 ## 5. Installing MetaTF
 
-With TF-Keras installed and the Brainchip PCIe drivers loaded, install the MetaTF packages. Install components **individually** (not via `pip install -r requirements.txt`) to avoid pip overwriting your Jetson-specific TensorFlow build:
+With TF-Keras and the driver installed:
 
 ```bash
-pip3 install akida==2.19.1
-pip3 install cnn2snn==2.19.1
-pip3 install akida-models==1.13.1
+pip install akida==2.19.1
+pip install cnn2snn==2.19.1
+pip install akida-models==1.13.1
 ```
 
-> **Version note:** These are the latest stable versions as of the MetaTF 2.19 release. Check [doc.brainchipinc.com](https://doc.brainchipinc.com/) for the most current pinned versions.
+Then test hardware access:
 
-Finally, execute the test script to confirm hardware execution:
 ```bash
 python3 tests/test_akida.py
 ```
 
-## Power Settings (Optional)
+## 6. Power Settings (Optional)
 
-For maximum performance, put your Jetson Orin Nano into "MAXN" mode using `nvpmodel`:
+For maximum performance:
+
 ```bash
 sudo nvpmodel -m 0
 ```
 
-## 6. Known Pitfalls & Troubleshooting 
+---
 
-### Phase 3: The BrainChip Driver Installation
-- **What Happened**: With the OS installed, the BrainChip `akida` Python library failed to detect the physical M.2 Co-processor, defaulting to software emulation.
-- **What Went Wrong**: Installing the Python software library via `pip` is not enough, the underlying Linux kernel module (`akida_pcie`) to bridge the physical hardware was missing. When attempting to compile it, the standard Ubuntu `linux-headers` package failed because the Jetson uses a heavily modified NVIDIA kernel.
-- **The Fix**: Install the specific `nvidia-l4t-kernel-headers` package instead. The `install_drivers.sh` script provided in this repository now automatically detects the Tegra architecture and installs these correct headers to successfully compile the driver from source and generate the `/dev/akida0` hardware node.
+## 7. Known Pitfalls & Troubleshooting
 
-### Phase 4: The PCIe Timeout and Kernel Panic
-- **What Happened**: The Python script successfully reached the hardware driver, but threw a `Connection timed out` error at memory address `0xf0000010`. In an attempt to fix this hardware timeout, editing the Jetson's bootloader caused the Jetson to instantly go into an endless reboot loop.
-- **What Went Wrong**: It was correctly assumed that standard Linux PCIe power management (ASPM) was putting the Co-processor to sleep causing the timeouts. However, the bootloader was modified by adding *both* `pcie_aspm=off` AND `iommu.passthrough=1` to the `/boot/extlinux/extlinux.conf` file. The Orin Nano's ARM64 architecture is fiercely strict on memory, so forcing IOMMU passthrough at the bootloader level on a Tegra kernel completely broke DMA routing and caused a catastrophic kernel panic during boot.
-- **The Fix**: The 128GB external USB drive was pulled, mounted directly on another computer, and the bad kernel arguments were manually deleted from the text file to restore the boot sequence.
+### Phase 3: Driver Installation — Wrong Kernel Headers
 
-### Phase 5: The PCIe Timeout — What NOT to Do
+- **Symptom:** The `akida_pcie` module fails to compile.
+- **Cause:** Standard `linux-headers` packages fail on Jetson because it uses a modified NVIDIA L4T kernel.
+- **Fix:** Install `nvidia-l4t-kernel-headers` instead. The `install_drivers.sh` script in this repository handles this automatically by detecting the Tegra architecture.
 
-> ⚠️ **CRITICAL: Do NOT use `pcie_aspm=off` as a global kernel boot argument on Jetson Orin Nano.**
+### Phase 4: PCIe Timeout + Kernel Panic from Bootloader Edit
 
-The `error reading at 0xf0000010 len: 4 errno(110): Connection timed out` error was observed when the Brainchip AKD1000 card enters a deep PCIe ASPM sleep state.
+- **Symptom:** `Connection timed out` at `0xf0000010`, then an endless reboot loop after editing bootloader.
+- **Cause:** `pcie_aspm=off` AND `iommu.passthrough=1` were both added to `/boot/extlinux/extlinux.conf`. On ARM64/Tegra, forcing IOMMU passthrough at boot level breaks DMA routing and causes a kernel panic.
+- **Fix:** The 128GB external USB drive was mounted on another computer and the bad kernel arguments were manually deleted from the text file to restore boot.
 
-Attempts were made to fix this by appending `pcie_aspm=off` to `/boot/extlinux/extlinux.conf`. **This bricked the Jetson twice and required two full OS reflashes.** The Jetson Orin Nano's NVMe SSD shares the same PCIe root complex as the M.2 slot — disabling ASPM globally severs the kernel's connection to the NVMe drive at boot, causing an unrecoverable `partition id not found` failure.
+### Phase 5: The PCIe Timeout — What NOT To Do
 
-**Safe approaches to the timeout issue:**
+> ⚠️ **CRITICAL: Do NOT use `pcie_aspm=off` as a global kernel boot argument on Jetson Orin.**
 
-1. **Warm reset (try this first):** The `resetpcie.sh` script performs a driver unload → PCIe bus remove → rescan → driver reload without any reboot or bootloader changes:
+Adding `pcie_aspm=off` to `/boot/extlinux/extlinux.conf` **bricked the Jetson twice** and required full OS reflashes. The Jetson's NVMe SSD shares the same PCIe root complex — disabling ASPM globally severs the kernel's connection to it at boot.
+
+**Safe approaches:**
+
+1. **Driver reload (try this first):**
    ```bash
-   ./scripts/resetpcie.sh
+   sudo ./scripts/fix_jetson_pcie.sh
    ```
 
-2. **Targeted ASPM disable (advanced):** If the timeout persists, disable ASPM *only* on the Akida device's specific PCIe slot — not the whole bus — using `setpci`. First, find the device's BDF address:
+2. **Targeted ASPM disable (advanced):** Disable ASPM only on the Akida device's specific slot using `setpci` — never globally. Find the BDF:
    ```bash
    lspci -D | grep -iE "Brainchip|Akida|Co-processor"
    ```
@@ -115,13 +119,132 @@ Attempts were made to fix this by appending `pcie_aspm=off` to `/boot/extlinux/e
    sudo setpci -s <BDF> CAP_EXP+10.w=0000
    ```
 
-3. **Reseat the hardware:** A loose M.2 card can cause intermittent timeout errors. Power off, reseat the AKD1000, and re-run `./scripts/check_hardware.sh`.
+3. **Reseat the hardware:** Power off, remove the AKD1000, reinsert firmly.
 
 The `apply_boot_fix.sh` script has been removed from this repository and must not be recreated.
 
-## 7. Key Takeaways: What Not to Do in the Future
+### Phase 6: BAR0 MMIO Returns 0xFFFFFFFF — Internal Bus Non-Responsive
 
-1. **Do not trust standard host OS settings for flashing**: Standard Ubuntu is built for consumer desktops, not pushing massive firmware blobs to embedded devices. Always expand the `usbfs_memory_mb` buffer and kill autosuspend before flashing a new Jetson.
-2. **Do not rush a hardware reset**: If a low-level process (like flashing or a kernel panic) fails, an immediate reboot will often drag ghost errors into the next session. Always unplug the power and wait 60 seconds to drain the capacitors.
-3. **Do not treat Tegra Linux like Desktop Linux**: The Jetson runs "L4T" (Linux for Tegra). Standard Ubuntu tutorials for installing headers, modifying GRUB, or tweaking kernel parameters will often fail or brick the device. Always look for Jetson-specific or L4T-specific documentation.
-4. **Do not modify the bootloader without a physical backdoor**: Never edit `extlinux.conf` on internal eMMC storage unless you have a serial debug console attached to catch boot errors. Because the OS was smartly installed on an external USB drive, there was a backdoor to plug it into another computer and fix the typo.
+This is the most subtle failure mode. The driver reports successful probe and `/dev/akida0` is created, but **all DMA operations time out** and MetaTF returns `Connection timed out` or `No devices detected`.
+
+**Root cause (discovered through deep PCIe diagnostics):**
+
+The AKD1000 uses a DW PCIe IP (DesignWare) split into two layers:
+- **PCIe MAC layer** — handles link training, config space TLPs. Stays functional.
+- **Application layer** — the Akida neural processor core, DBI AXI slave, eDMA engine. Can be dead while the MAC layer runs fine.
+
+When the application layer is non-functional:
+- `lspci` enumerates the device ✅
+- Config space reads (iATU registers) return correct values ✅
+- **ALL BAR MMIO reads return `0xFFFFFFFF`** ❌
+- DMA operations time out after 2 seconds ❌
+
+The driver probe "succeeds" because `0xFFFFFFFF` masked to `GENMASK(3,0)` gives 15, which is then clamped to the configured 2 channels — a valid-looking result. No register write failures are reported because PCIe Memory Write TLPs are posted (fire-and-forget, no ACK).
+
+**Verified diagnostics on Jetson Orin NX:**
+
+```
+Endpoint BDF:     0004:01:00.0
+Root port:        0004:00:00.0  (tegra194-pcie 14160000.pcie)
+PCIe link:        Gen2 x2  ✅
+Config space:     Working (iATU Region 0→0xFCC00000, 1→0xF8C00000, 2→0x20000000) ✅
+BAR0 MMIO:        0xFFFFFFFF  ❌
+BAR2 MMIO:        0xFFFFFFFF  ❌
+DMA pread:        errno 110 (Connection timed out)  ❌
+```
+
+**Diagnostic script:** Run the following to generate a full diagnostic report:
+```bash
+sudo ./scripts/diagnose_pcie.sh
+```
+
+**Quick diagnostic:** Test BAR0 MMIO directly:
+```bash
+python3 -c "
+import mmap, os, struct, signal, sys
+signal.signal(signal.SIGALRM, lambda s,f: (print('[FAIL] Timeout'), sys.exit(1)))
+signal.alarm(5)
+fd = os.open('/dev/akida0', os.O_RDWR)
+m = mmap.mmap(fd, 4096, mmap.MAP_SHARED, mmap.PROT_READ, offset=0)
+val = struct.unpack('<I', m[:4])[0]
+print(f'BAR0[0x00] = 0x{val:08x}')
+print('[OK] Internal bus responding.' if val != 0xFFFFFFFF else '[FAIL] Internal bus dead.')
+m.close(); os.close(fd)
+signal.alarm(0)
+"
+```
+
+**Try the Jetson fix script first:**
+```bash
+sudo ./scripts/fix_jetson_pcie.sh
+```
+
+If the fix script reports BAR0 still returns `0xFFFFFFFF`, proceed to the x86 cross-test below.
+
+### Phase 7: x86 Cross-Test — Determining if the Card is Faulty
+
+Testing the AKD1000 in a standard x86 PC definitively determines whether the issue is the card or the Jetson slot.
+
+**Requirements:** Any x86-64 PC with an M.2 Key-M slot. Ubuntu/Debian preferred.
+
+**Steps on the x86 machine:**
+
+1. Install build tools and the driver:
+   ```bash
+   sudo apt install -y build-essential linux-headers-$(uname -r) git
+   cd ~/akida_dw_edma  # or git clone https://github.com/Brainchip-Inc/akida_dw_edma
+   chmod +x install.sh && sudo ./install.sh
+   ```
+
+2. Verify the card enumerated:
+   ```bash
+   lspci | grep Co-processor
+   # Expected: Co-processor: Brainchip Inc AKD1000 Neural Network Coprocessor [Akida] (rev 01)
+   ```
+
+3. Run hardware check:
+   ```bash
+   ./scripts/check_hardware.sh
+   ```
+
+4. Test BAR0 MMIO (the critical test):
+   ```bash
+   python3 -c "
+   import mmap, os, struct, signal, sys
+   signal.signal(signal.SIGALRM, lambda s,f: (print('[FAIL] Timeout'), sys.exit(1)))
+   signal.alarm(5)
+   fd = os.open('/dev/akida0', os.O_RDWR)
+   m = mmap.mmap(fd, 4096, mmap.MAP_SHARED, mmap.PROT_READ, offset=0)
+   val = struct.unpack('<I', m[:4])[0]
+   print(f'BAR0[0x00] = 0x{val:08x}')
+   result = 'OK - card works' if val != 0xFFFFFFFF else 'FAIL - card internal bus dead'
+   print(result)
+   m.close(); os.close(fd)
+   signal.alarm(0)
+   "
+   ```
+
+5. Full MetaTF test:
+   ```bash
+   python3 -m venv ~/akida_env && source ~/akida_env/bin/activate
+   pip install akida==2.19.1 cnn2snn==2.19.1 tf-keras==2.19 akida-models==1.13.1
+   python3 tests/test_akida.py
+   ```
+
+**Interpreting results:**
+
+| BAR0 on x86 | BAR0 on Jetson | Conclusion |
+|---|---|---|
+| Valid value | `0xFFFFFFFF` | Jetson slot power/device tree issue. Card is fine. |
+| `0xFFFFFFFF` | `0xFFFFFFFF` | AKD1000 card hardware fault. Contact Brainchip for RMA. |
+| Valid value | Valid value | Both work — original Jetson issue resolved. |
+
+---
+
+## 8. Key Takeaways: What Not to Do
+
+1. **Do not trust standard host OS settings for flashing**: Always expand `usbfs_memory_mb` and kill autosuspend before flashing a Jetson.
+2. **Do not rush a hardware reset**: If a low-level process fails, unplug power and wait 60 seconds before rebooting.
+3. **Do not treat Tegra Linux like Desktop Linux**: Standard Ubuntu tutorials for GRUB, kernel parameters, or headers will fail on L4T. Always use Jetson-specific documentation.
+4. **Do not modify the bootloader without a physical backdoor**: Never edit `extlinux.conf` without a serial debug console or an external-USB OS install that you can mount on another machine to undo mistakes.
+5. **Do not do a PCIe bus rescan on Jetson**: Always use `scripts/resetpcie.sh` (driver unload/reload only). Bus remove + rescan forces Tegra's ASPM to wipe BAR memory mappings, causing `BAR I/O remapping failed (-22)`.
