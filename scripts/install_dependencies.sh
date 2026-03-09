@@ -46,23 +46,46 @@ if [ -z "$PY_CMD" ]; then
     if command -v python3.12 &>/dev/null; then
         PY_CMD="python3.12"
     else
-        echo "  [ERROR] MetaTF 2.19.1 does not support Python 3.13+ yet, and"
-        echo "  no older Python versions could be installed via apt."
-        echo ""
-        echo "  Please use Miniconda to create an environment with a supported Python version:"
-        echo "    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"
-        echo "    bash Miniconda3-latest-Linux-x86_64.sh -b -p \$HOME/miniconda3"
-        echo "    source \$HOME/miniconda3/bin/activate"
-        echo "    conda create -y -n akida_env python=3.12"
-        echo "    conda activate akida_env"
-        echo "    pip install tf-keras==2.19 akida==2.19.1 cnn2snn==2.19.1 akida-models==1.13.1"
-        exit 1
+        echo "  [INFO] MetaTF 2.19.1 requires Python 3.12 (Kubuntu 25 defaults to 3.13)."
+        echo "  [INFO] Setting up a local Python 3.12 interpreter just for this environment..."
+        
+        LOCAL_PY_DIR="$HOME/.local-python3.12"
+        mkdir -p "$LOCAL_PY_DIR/deb"
+        cd "$LOCAL_PY_DIR/deb"
+        
+        # Download Ubuntu 24.04 (Noble) packages of Python 3.12 to extract locally
+        echo "  Downloading Python 3.12 packages..."
+        wget -q -c http://security.ubuntu.com/ubuntu/pool/main/p/python3.12/python3.12-minimal_3.12.3-1ubuntu0.5_amd64.deb
+        wget -q -c http://security.ubuntu.com/ubuntu/pool/main/p/python3.12/libpython3.12-minimal_3.12.3-1ubuntu0.5_amd64.deb
+        wget -q -c http://security.ubuntu.com/ubuntu/pool/main/p/python3.12/libpython3.12-stdlib_3.12.3-1ubuntu0.5_amd64.deb
+        wget -q -c http://security.ubuntu.com/ubuntu/pool/main/p/python3.12/python3.12-venv_3.12.3-1ubuntu0.5_amd64.deb
+        
+        echo "  Extracting packages locally..."
+        for deb in *.deb; do
+            dpkg -x "$deb" "$LOCAL_PY_DIR/extracted"
+        done
+        
+        # Point PY_CMD to the locally extracted binary
+        # We must set LD_LIBRARY_PATH so it finds its own extracted stdlib
+        export LD_LIBRARY_PATH="$LOCAL_PY_DIR/extracted/usr/lib:${LD_LIBRARY_PATH:-}"
+        export PYTHONPATH="$LOCAL_PY_DIR/extracted/usr/lib/python3.12"
+        
+        PY_CMD="$LOCAL_PY_DIR/extracted/usr/bin/python3.12"
+        cd "$REPO_ROOT"
+        
+        if [ ! -f "$PY_CMD" ]; then
+            echo "  [ERROR] Failed to extract local Python 3.12."
+            exit 1
+        fi
+        echo "  [OK] Local Python 3.12 prepared at $PY_CMD"
     fi
 fi
 
 echo "  Selected Python interpreter: $PY_CMD"
-# Ensure the venv and dev packages for the selected version are installed
-sudo apt install -y "${PY_CMD}-venv" "${PY_CMD}-dev" || true
+# Try to ensure standard venv packages if using system python
+if [[ "$PY_CMD" != *".local-python3.12"* ]]; then
+    sudo apt install -y "${PY_CMD}-venv" "${PY_CMD}-dev" || true
+fi
 
 if [ "$IS_JETSON" = true ]; then
     echo "  Installing Jetson-specific system dependencies..."
