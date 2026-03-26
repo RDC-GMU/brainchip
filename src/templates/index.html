@@ -9,11 +9,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+<script src="https://code.iconify.design/iconify-icon/1.0.8/iconify-icon.min.js"></script>
 <style>
-/* ── Reset ─────────────────────────────────────────── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
-/* ── Base (from user design system) ────────────────── */
 body{font-family:"JetBrains Mono","Fira Mono","Cascadia Mono",Consolas,"Courier New",monospace;
   background:#fff;color:#000;padding:20px;max-width:1400px;margin:0 auto;font-size:14px;line-height:1.5}
 h1{font-size:1.5rem;font-weight:700}
@@ -23,8 +22,9 @@ a:visited{color:#581c87}
 hr{border:0;border-top:1px solid #000;margin:20px 0}
 pre{margin:10px 0;white-space:pre-wrap}
 button:disabled{opacity:.5;cursor:not-allowed}
+iconify-icon{display:inline-block;vertical-align:middle;line-height:1}
 
-/* ── Layout ────────────────────────────────────────── */
+/* ── Layout ─────────────────────────────────────── */
 .dashboard-grid{display:flex;flex-direction:column;gap:20px;align-items:flex-start;width:100%}
 .column-main{width:100%;display:flex;flex-direction:column;gap:20px;overflow:hidden}
 .column-side{width:100%;display:flex;flex-direction:column;gap:20px;overflow:hidden}
@@ -34,13 +34,10 @@ button:disabled{opacity:.5;cursor:not-allowed}
   .column-side{width:auto;flex:1.5}
 }
 
-/* ── Components ────────────────────────────────────── */
-.config-category{padding:15px;background:#fff;border:1px solid #000;margin-bottom:0}
-.config-category h2{margin-top:0;margin-bottom:12px;color:#000;font-size:1.25rem;border-bottom:1px solid #000;padding-bottom:4px}
-
-.hardware-box{margin-top:20px;border:1px solid #000;padding:10px;background:#f8f8f8;max-width:100%;overflow-x:auto}
-.hardware-box h3{margin:0 0 10px;font-weight:700;text-decoration:underline;font-size:1.125rem}
-.hardware-box p{margin:4px 0}
+/* ── Components ─────────────────────────────────── */
+.config-category{padding:15px;background:#fff;border:1px solid #000}
+.config-category h2{margin-top:0;margin-bottom:12px;font-size:1.25rem;border-bottom:1px solid #000;padding-bottom:4px;display:flex;align-items:center;gap:8px}
+.config-category h2 iconify-icon{font-size:1.1rem}
 
 .config-table{margin-top:10px;width:100%;border-collapse:collapse;background:#fff;font-size:.875rem}
 .config-table th,.config-table td{border:1px solid #000;padding:8px 10px;text-align:left}
@@ -50,18 +47,14 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .error{color:#dc2626;font-weight:700}
 
 .header-container{display:flex;align-items:center;gap:15px;margin-bottom:20px;flex-wrap:wrap}
-.header-container h1{margin:0}
+.header-container h1{margin:0;display:flex;align-items:center;gap:10px}
 
-.edit-btn,.export-btn,.save-btn,.cancel-btn{
-  padding:6px 15px;font-size:.875rem;font-weight:700;cursor:pointer;
-  border:1px solid #000;background:#e0e0e0;font-family:inherit;transition:background .15s}
-.edit-btn:hover,.export-btn:hover,.save-btn:hover,.cancel-btn:hover{background:#d0d0d0}
+.edit-btn{padding:6px 15px;font-size:.875rem;font-weight:700;cursor:pointer;
+  border:1px solid #000;background:#e0e0e0;font-family:inherit;transition:background .15s;
+  display:inline-flex;align-items:center;gap:6px}
+.edit-btn:hover{background:#d0d0d0}
 
-.delete-btn{padding:6px 15px;font-size:.875rem;font-weight:700;cursor:pointer;
-  border:1px solid #900;background:#fcc;color:#900;font-family:inherit;margin-left:auto}
-.delete-btn:hover{background:#f99}
-
-/* ── System bars ───────────────────────────────────── */
+/* ── System bars ─────────────────────────────────── */
 .sys-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}
 @media(max-width:600px){.sys-grid{grid-template-columns:1fr}}
 .sys-label{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
@@ -72,9 +65,20 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .sys-bar-warn{background:#c8a000}
 .sys-bar-crit{background:#cc0000}
 
-/* ── Console ───────────────────────────────────────── */
-.console-box{border:1px solid #000;background:#f8f8f8;padding:0;font-family:inherit;font-size:13px}
-.console-output{height:260px;overflow-y:auto;padding:10px;white-space:pre-wrap;word-break:break-all}
+/* ── Camera ─────────────────────────────────────── */
+.camera-wrap{position:relative;background:#1a1a1a;border:1px solid #000;line-height:0}
+.camera-wrap img{width:100%;height:auto;display:block;max-height:360px;object-fit:contain}
+.camera-badge{position:absolute;top:6px;left:6px;font-size:.7rem;font-weight:700;padding:2px 8px;
+  display:flex;align-items:center;gap:4px;border:1px solid}
+.camera-badge.live{background:rgba(0,0,0,.7);color:#4ade80;border-color:#4ade80}
+.camera-badge.dead{background:rgba(0,0,0,.7);color:#f87171;border-color:#f87171}
+.cam-dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+.cam-dot.live{animation:blink 1.2s step-end infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* ── Console ─────────────────────────────────────── */
+.console-box{border:1px solid #000;background:#f8f8f8;font-family:inherit;font-size:13px}
+.console-output{height:240px;overflow-y:auto;padding:10px;white-space:pre-wrap;word-break:break-all}
 .console-output .console-cmd{color:#006400}
 .console-output .console-resp{color:#333}
 .console-output .console-err{color:#dc2626;font-weight:700}
@@ -84,35 +88,40 @@ button:disabled{opacity:.5;cursor:not-allowed}
   font-family:inherit;font-size:13px;padding:8px 4px}
 .console-input::placeholder{color:#999}
 .console-send{border:none;border-left:1px solid #000;background:#e0e0e0;color:#000;
-  padding:8px 15px;font-size:13px;font-family:inherit;cursor:pointer;font-weight:700}
+  padding:8px 12px;font-size:13px;font-family:inherit;cursor:pointer;font-weight:700;
+  display:flex;align-items:center;gap:5px}
 .console-send:hover{background:#d0d0d0}
 
-/* ── Actions grid ──────────────────────────────────── */
+/* ── Actions grid ────────────────────────────────── */
 .actions-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .action-btn{padding:10px 8px;font-size:.8rem;font-weight:700;cursor:pointer;
-  border:1px solid #000;background:#e0e0e0;font-family:inherit;text-align:center;transition:background .15s}
-.action-btn:hover{background:#d0d0d0}
+  border:1px solid #000;background:#e0e0e0;font-family:inherit;text-align:center;
+  transition:background .15s;display:flex;align-items:center;justify-content:center;gap:7px}
+.action-btn:hover:not(:disabled){background:#d0d0d0}
 .action-btn.running{background:#ffe066;cursor:wait}
 
-/* ── Status pill ───────────────────────────────────── */
+/* ── Status pill ─────────────────────────────────── */
 .pill{display:inline-block;padding:2px 8px;font-size:.75rem;font-weight:700;border:1px solid}
 .pill-ok{color:#15803d;border-color:#15803d;background:#dcfce7}
 .pill-fail{color:#dc2626;border-color:#dc2626;background:#fef2f2}
 
-/* ── Misc ──────────────────────────────────────────── */
+/* ── Misc ────────────────────────────────────────── */
 .status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
 .status-dot.on{background:#15803d;box-shadow:0 0 4px #15803d}
 .status-dot.off{background:#dc2626;box-shadow:0 0 4px #dc2626}
 .meta-row{display:flex;gap:20px;flex-wrap:wrap;font-size:.8rem;color:#555;margin-top:4px}
 .script-output{margin-top:10px;padding:10px;border:1px solid #000;background:#f8f8f8;
-  max-height:300px;overflow-y:auto;white-space:pre-wrap;font-size:12px;display:none}
+  max-height:300px;overflow-y:auto;white-space:pre-wrap;font-size:12px}
 </style>
 </head>
 <body>
 
-<!-- ═══════════════════ HEADER ═══════════════════ -->
+<!-- HEADER -->
 <div class="header-container">
-  <h1>⬡ BRAINCHIP AKD1000 — DASHBOARD</h1>
+  <h1>
+    <iconify-icon icon="mdi:hexagon-outline" style="font-size:1.6rem"></iconify-icon>
+    BRAINCHIP AKD1000 — DASHBOARD
+  </h1>
   <span id="ws-status"><span class="status-dot off"></span><span class="error">CONNECTING</span></span>
 </div>
 <div class="meta-row">
@@ -123,20 +132,38 @@ button:disabled{opacity:.5;cursor:not-allowed}
 </div>
 <hr>
 
-<!-- ═══════════════════ GRID ════════════════════ -->
+<!-- GRID -->
 <div class="dashboard-grid">
 
-<!-- ─── MAIN COLUMN ──────────────────────────── -->
+<!-- MAIN COLUMN -->
 <div class="column-main">
+
+  <!-- Camera Feed -->
+  <div class="config-category">
+    <h2>
+      <iconify-icon icon="mdi:camera"></iconify-icon>
+      CAMERA FEED
+    </h2>
+    <div class="camera-wrap">
+      <img id="cam-img" src="/video_feed" alt="USB camera stream">
+      <div class="camera-badge {% if cam_ok %}live{% else %}dead{% endif %}" id="cam-badge">
+        <div class="cam-dot {% if cam_ok %}live{% endif %}"></div>
+        <span id="cam-label">{% if cam_ok %}LIVE · /dev/video0{% else %}NO SIGNAL{% endif %}</span>
+      </div>
+    </div>
+  </div>
 
   <!-- System Resources -->
   <div class="config-category">
-    <h2>SYSTEM RESOURCES</h2>
+    <h2>
+      <iconify-icon icon="mdi:gauge"></iconify-icon>
+      SYSTEM RESOURCES
+    </h2>
     <div class="sys-grid">
       <div>
         <div class="sys-label">CPU</div>
         <div class="sys-val" id="cpu-val">—</div>
-        <div class="sys-sub" id="cpu-sub">{{ sys_info.cpu_count }} cores · {{ sys_info.cpu_model }}</div>
+        <div class="sys-sub">{{ sys_info.cpu_count }} cores · {{ sys_info.cpu_model }}</div>
         <div class="sys-bar-wrap"><div class="sys-bar" id="cpu-bar"></div></div>
       </div>
       <div>
@@ -153,7 +180,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
       </div>
     </div>
 
-    <div style="display:flex;gap:30px;flex-wrap:wrap;margin-top:15px;">
+    <div style="display:flex;gap:30px;flex-wrap:wrap;margin-top:15px">
       <div>
         <div class="sys-label">Temperature</div>
         <div style="display:flex;align-items:center;gap:10px">
@@ -174,66 +201,99 @@ button:disabled{opacity:.5;cursor:not-allowed}
 
   <!-- Akida Hardware -->
   <div class="config-category">
-    <h2>AKIDA HARDWARE</h2>
+    <h2>
+      <iconify-icon icon="mdi:chip"></iconify-icon>
+      AKIDA HARDWARE
+    </h2>
     <table class="config-table" id="hw-table">
       <thead><tr><th style="width:140px">Check</th><th style="width:80px">Status</th><th>Detail</th></tr></thead>
       <tbody>
-        <tr><td>PCIe Bus</td><td>{%if hw.pcie.ok%}<span class="pill pill-ok">PASS</span>{%else%}<span class="pill pill-fail">FAIL</span>{%endif%}</td><td>{{hw.pcie.info}}</td></tr>
-        <tr><td>Kernel Module</td><td>{%if hw.module.ok%}<span class="pill pill-ok">PASS</span>{%else%}<span class="pill pill-fail">FAIL</span>{%endif%}</td><td>{{hw.module.info}}</td></tr>
-        <tr><td>Device Node</td><td>{%if hw.device.ok%}<span class="pill pill-ok">PASS</span>{%else%}<span class="pill pill-fail">FAIL</span>{%endif%}</td><td>{{hw.device.info}}</td></tr>
-        <tr><td>MetaTF / Akida</td><td>{%if hw.akida.ok%}<span class="pill pill-ok">PASS</span>{%else%}<span class="pill pill-fail">FAIL</span>{%endif%}</td><td>{{hw.akida.info}}</td></tr>
+        <tr><td>PCIe Bus</td><td>{% if hw.pcie.ok %}<span class="pill pill-ok">PASS</span>{% else %}<span class="pill pill-fail">FAIL</span>{% endif %}</td><td>{{ hw.pcie.info }}</td></tr>
+        <tr><td>Kernel Module</td><td>{% if hw.module.ok %}<span class="pill pill-ok">PASS</span>{% else %}<span class="pill pill-fail">FAIL</span>{% endif %}</td><td>{{ hw.module.info }}</td></tr>
+        <tr><td>Device Node</td><td>{% if hw.device.ok %}<span class="pill pill-ok">PASS</span>{% else %}<span class="pill pill-fail">FAIL</span>{% endif %}</td><td>{{ hw.device.info }}</td></tr>
+        <tr><td>MetaTF / Akida</td><td>{% if hw.akida.ok %}<span class="pill pill-ok">PASS</span>{% else %}<span class="pill pill-fail">FAIL</span>{% endif %}</td><td>{{ hw.akida.info }}</td></tr>
       </tbody>
     </table>
     <div style="margin-top:10px">
-      <button class="edit-btn" onclick="refreshHW()">↻ Refresh</button>
+      <button class="edit-btn" onclick="refreshHW()">
+        <iconify-icon icon="mdi:refresh"></iconify-icon> Refresh
+      </button>
     </div>
   </div>
 
   <!-- Script Output -->
   <div class="config-category" id="script-panel" style="display:none">
-    <h2 id="script-title">SCRIPT OUTPUT</h2>
-    <pre class="script-output" id="script-out" style="display:block"></pre>
+    <h2 id="script-title">
+      <iconify-icon icon="mdi:text-box-outline"></iconify-icon>
+      SCRIPT OUTPUT
+    </h2>
+    <pre class="script-output" id="script-out"></pre>
   </div>
 
 </div><!-- /column-main -->
 
-<!-- ─── SIDE COLUMN ──────────────────────────── -->
+<!-- SIDE COLUMN -->
 <div class="column-side">
 
   <!-- Quick Actions -->
   <div class="config-category">
-    <h2>ACTIONS</h2>
+    <h2>
+      <iconify-icon icon="mdi:lightning-bolt"></iconify-icon>
+      ACTIONS
+    </h2>
     <div class="actions-grid">
-      <button class="action-btn" data-script="check_hw" onclick="runScript(this)">⚙ Check Hardware</button>
-      <button class="action-btn" data-script="test_akida" onclick="runScript(this)">△ Test Akida</button>
-      <button class="action-btn" data-script="detect" onclick="runScript(this)">◎ Run Detection</button>
-      <button class="action-btn" onclick="refreshHW()">↻ Refresh HW</button>
+      <button class="action-btn" id="btn-check_hw" data-script="check_hw" onclick="runScript(this)">
+        <iconify-icon icon="mdi:cog"></iconify-icon> Check Hardware
+      </button>
+      <button class="action-btn" id="btn-test_akida" data-script="test_akida" onclick="runScript(this)">
+        <iconify-icon icon="mdi:flash"></iconify-icon> Test Akida
+      </button>
+      <button class="action-btn" id="btn-detect" data-script="detect" onclick="runScript(this)">
+        <iconify-icon icon="mdi:eye"></iconify-icon> Run Detection
+      </button>
+      <button class="action-btn" onclick="refreshHW()">
+        <iconify-icon icon="mdi:refresh"></iconify-icon> Refresh HW
+      </button>
     </div>
   </div>
 
   <!-- Console -->
   <div class="config-category">
-    <h2>CONSOLE</h2>
+    <h2>
+      <iconify-icon icon="mdi:console"></iconify-icon>
+      CONSOLE
+    </h2>
     <div class="console-box">
-      <div class="console-output" id="console-out"><span class="console-resp">Ready. Working directory: ~/brainchip\n</span></div>
+      <div class="console-output" id="console-out">
+        <span class="console-resp">Ready. Working directory: ~/brainchip
+</span>
+      </div>
       <div class="console-input-row">
         <span class="console-prompt">$</span>
-        <input class="console-input" id="console-in" type="text" placeholder="type a command…"
-               autocomplete="off" spellcheck="false">
-        <button class="console-send" id="console-send" onclick="sendCmd()">RUN</button>
+        <input class="console-input" id="console-in" type="text"
+               placeholder="type a command..." autocomplete="off" spellcheck="false">
+        <button class="console-send" id="console-send" onclick="sendCmd()">
+          <iconify-icon icon="mdi:play"></iconify-icon> RUN
+        </button>
       </div>
     </div>
   </div>
 
   <!-- System Info -->
   <div class="config-category">
-    <h2>SYSTEM INFO</h2>
+    <h2>
+      <iconify-icon icon="mdi:information-outline"></iconify-icon>
+      SYSTEM INFO
+    </h2>
     <table class="config-table">
       <tr><th>Hostname</th><td>{{ sys_info.hostname }}</td></tr>
       <tr><th>OS</th><td>{{ sys_info.os }}</td></tr>
       <tr><th>Architecture</th><td>{{ sys_info.arch }}</td></tr>
       <tr><th>Python</th><td>{{ sys_info.python }}</td></tr>
-      <tr><th>CPU</th><td>{{ sys_info.cpu_count }}× {{ sys_info.cpu_model }}</td></tr>
+      <tr><th>CPU</th><td>{{ sys_info.cpu_count }}x {{ sys_info.cpu_model }}</td></tr>
+      <tr><th>Camera</th>
+          <td id="cam-info-row">{% if cam_ok %}<span class="connected">/dev/video0 — active</span>{% else %}<span class="error">not found</span>{% endif %}</td>
+      </tr>
     </table>
   </div>
 
@@ -245,9 +305,8 @@ button:disabled{opacity:.5;cursor:not-allowed}
   Brainchip AKD1000 Dashboard · Flask + WebSocket · <span id="clock"></span>
 </div>
 
-<!-- ═══════════════════ JS ══════════════════════ -->
 <script>
-/* ── Utilities ───────────────────────────────── */
+/* ── Utilities ─────────────────────────────────── */
 function fmtB(b){
   if(b<1024)return b+' B';
   if(b<1048576)return(b/1024).toFixed(1)+' KB';
@@ -261,7 +320,14 @@ function fmtUp(s){
 function barClass(pct){return pct>85?'sys-bar sys-bar-crit':pct>60?'sys-bar sys-bar-warn':'sys-bar'}
 function $(id){return document.getElementById(id)}
 
-/* ── Socket.IO ───────────────────────────────── */
+/* ── Button label lookup (no emojis) ───────────── */
+const BTN_LABELS = {
+  check_hw:   {icon:'mdi:cog',   text:'Check Hardware'},
+  test_akida: {icon:'mdi:flash', text:'Test Akida'},
+  detect:     {icon:'mdi:eye',   text:'Run Detection'},
+};
+
+/* ── Socket.IO ─────────────────────────────────── */
 const sock=io({reconnectionDelay:1000,reconnectionAttempts:Infinity});
 sock.on('connect',()=>{
   $('ws-status').innerHTML='<span class="status-dot on"></span><span class="connected">CONNECTED</span>';
@@ -270,39 +336,43 @@ sock.on('disconnect',()=>{
   $('ws-status').innerHTML='<span class="status-dot off"></span><span class="error">DISCONNECTED</span>';
 });
 
-/* ── System updates ──────────────────────────── */
+/* ── System updates ────────────────────────────── */
 sock.on('sys',d=>{
-  // CPU
   $('cpu-val').textContent=d.cpu_all.toFixed(0)+'%';
   const cb=$('cpu-bar');cb.style.width=d.cpu_all+'%';cb.className=barClass(d.cpu_all);
 
-  // Memory
   $('mem-val').textContent=d.mem_pct.toFixed(0)+'%';
   $('mem-sub').textContent=fmtB(d.mem_used)+' / '+fmtB(d.mem_total);
   const mb=$('mem-bar');mb.style.width=d.mem_pct+'%';mb.className=barClass(d.mem_pct);
 
-  // Disk
   $('dsk-val').textContent=d.dsk_pct.toFixed(0)+'%';
   $('dsk-sub').textContent=fmtB(d.dsk_used)+' / '+fmtB(d.dsk_total);
   const db=$('dsk-bar');db.style.width=d.dsk_pct+'%';db.className=barClass(d.dsk_pct);
 
-  // Temp
   if(d.temp!==null){
     $('temp-val').textContent=d.temp+'°C';
     const tp=Math.min(100,d.temp/85*100);
     const tb=$('temp-bar');tb.style.width=tp+'%';
     tb.className=d.temp>75?'sys-bar sys-bar-crit':d.temp>60?'sys-bar sys-bar-warn':'sys-bar';
   }
-
-  // Uptime
   $('uptime-val').textContent=fmtUp(d.uptime);
-
-  // Network
   $('net-tx').textContent=fmtB(d.net_tx);
   $('net-rx').textContent=fmtB(d.net_rx);
+
+  // Update camera status badge
+  const badge=$('cam-badge'),dot=badge.querySelector('.cam-dot'),label=$('cam-label');
+  if(d.cam_ok){
+    badge.className='camera-badge live';dot.className='cam-dot live';
+    label.textContent='LIVE · /dev/video0';
+    $('cam-info-row').innerHTML='<span class="connected">/dev/video0 — active</span>';
+  } else {
+    badge.className='camera-badge dead';dot.className='cam-dot';
+    label.textContent='NO SIGNAL';
+    $('cam-info-row').innerHTML='<span class="error">not found</span>';
+  }
 });
 
-/* ── Hardware refresh ────────────────────────── */
+/* ── Hardware refresh ──────────────────────────── */
 function refreshHW(){sock.emit('refresh_hw');}
 sock.on('hw',d=>{
   const tb=$('hw-table').querySelector('tbody');
@@ -314,7 +384,7 @@ sock.on('hw',d=>{
   });
 });
 
-/* ── Console ─────────────────────────────────── */
+/* ── Console ───────────────────────────────────── */
 let cmdHist=[],histIdx=-1;
 const cIn=$('console-in'),cOut=$('console-out');
 
@@ -323,49 +393,55 @@ function sendCmd(){
   cmdHist.unshift(c);histIdx=-1;
   appendConsole('$ '+c,'console-cmd');
   cIn.value='';cIn.disabled=true;$('console-send').disabled=true;
-  sock.emit('cmd',{c:c});
+  sock.emit('cmd',{c});
 }
 cIn.addEventListener('keydown',e=>{
   if(e.key==='Enter')sendCmd();
   else if(e.key==='ArrowUp'){e.preventDefault();if(histIdx<cmdHist.length-1){histIdx++;cIn.value=cmdHist[histIdx]}}
   else if(e.key==='ArrowDown'){e.preventDefault();if(histIdx>0){histIdx--;cIn.value=cmdHist[histIdx]}else{histIdx=-1;cIn.value=''}}
 });
-
 sock.on('cmd_r',d=>{
   appendConsole(d.o,d.err?'console-err':'console-resp');
   cIn.disabled=false;$('console-send').disabled=false;cIn.focus();
 });
-
 function appendConsole(text,cls){
   const s=document.createElement('span');s.className=cls;s.textContent=text+'\n';
   cOut.appendChild(s);cOut.scrollTop=cOut.scrollHeight;
 }
 
-/* ── Script runner ───────────────────────────── */
+/* ── Script runner ─────────────────────────────── */
 function runScript(btn){
   const s=btn.dataset.script;if(!s)return;
   document.querySelectorAll('.action-btn').forEach(b=>b.disabled=true);
-  btn.classList.add('running');btn.textContent='⏳ Running…';
+  btn.classList.add('running');
+  btn.innerHTML=`<iconify-icon icon="mdi:loading" style="animation:spin 1s linear infinite"></iconify-icon> Running...`;
   $('script-panel').style.display='';
-  $('script-title').textContent='RUNNING: '+s;
-  $('script-out').textContent='Starting…\n';
-  sock.emit('run_script',{s:s});
+  $('script-title').innerHTML=`<iconify-icon icon="mdi:text-box-outline"></iconify-icon> RUNNING: ${s}`;
+  $('script-out').textContent='';
+  sock.emit('run_script',{s});
 }
 sock.on('script_r',d=>{
-  $('script-out').textContent+=d.o+'\n';
-  $('script-out').scrollTop=$('script-out').scrollHeight;
-  if(!d.o.startsWith('▶')){
+  if(d.starting){
+    $('script-out').textContent=d.o+'\n';
+  } else {
+    $('script-out').textContent+=d.o+'\n';
+    $('script-out').scrollTop=$('script-out').scrollHeight;
     document.querySelectorAll('.action-btn').forEach(b=>{b.disabled=false;b.classList.remove('running')});
-    // restore button labels
     document.querySelectorAll('.action-btn[data-script]').forEach(b=>{
-      const labels={check_hw:'⚙ Check Hardware',test_akida:'△ Test Akida',detect:'◎ Run Detection'};
-      b.textContent=labels[b.dataset.script]||b.dataset.script;
+      const info=BTN_LABELS[b.dataset.script];
+      if(info) b.innerHTML=`<iconify-icon icon="${info.icon}"></iconify-icon> ${info.text}`;
     });
-    $('script-title').textContent='OUTPUT: '+d.s+(d.err?' [ERROR]':' [DONE]');
+    const done=d.err?' [ERROR]':' [DONE]';
+    $('script-title').innerHTML=`<iconify-icon icon="mdi:text-box-outline"></iconify-icon> OUTPUT: ${d.s}${done}`;
   }
 });
 
-/* ── Clock ───────────────────────────────────── */
+/* ── Spin animation for loading icon ───────────── */
+const st=document.createElement('style');
+st.textContent='@keyframes spin{to{transform:rotate(360deg)}}';
+document.head.appendChild(st);
+
+/* ── Clock ─────────────────────────────────────── */
 setInterval(()=>{$('clock').textContent=new Date().toLocaleTimeString()},1000);
 $('clock').textContent=new Date().toLocaleTimeString();
 </script>

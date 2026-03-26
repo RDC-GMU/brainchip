@@ -10,3 +10,4 @@ Pillow
 flask
 flask-socketio
 psutil
+opencv-python-headless
