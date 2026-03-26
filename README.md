@@ -74,7 +74,17 @@ brainchip/
 | `akida-models` | 1.13.1 | Pre-trained model zoo |
 | `flask` + `flask-socketio` | latest | Dashboard web server |
 | `psutil` | latest | System resource monitoring |
+| `opencv-python-headless` | latest | USB camera capture (MJPEG) |
 | `numpy`, `matplotlib`, `Pillow` | latest | Image I/O and visualization |
+
+**System libraries required on Pi (installed by `install_dependencies.sh`):**
+
+| Library | Purpose |
+|---------|--------|
+| `libgl1` | OpenGL stub — runtime dep of `opencv-python-headless` even in headless mode |
+| `libglib2.0-0` | GLib runtime — required by OpenCV |
+| `libopenblas-dev` | BLAS backend for NumPy |
+| `libhdf5-dev` | HDF5 for model weights |
 
 > **Note:** Python 3.10–3.12 required. MetaTF does not support Python 3.13+.
 
@@ -118,6 +128,16 @@ python3 tests/test_object_detection.py --benchmark 100     # FPS benchmark (100 
 ```
 
 Verifies PCIe bus, kernel module, device node, MetaTF enumeration, and BAR0 MMIO integrity.
+
+### `ImportError: libGL.so.1: cannot open shared object file`
+
+`opencv-python-headless` still links against `libGL.so.1` at runtime. Fix:
+
+```bash
+sudo apt install -y libgl1 libglib2.0-0
+```
+
+`install_dependencies.sh` handles this automatically on fresh installs.
 
 ### Deep PCIe diagnostics
 

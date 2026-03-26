@@ -27,6 +27,7 @@ sudo apt install -y \
     libjpeg-dev libpng-dev zlib1g-dev \
     libfreetype6-dev pkg-config \
     libhdf5-dev hdf5-tools \
+    libgl1 libglib2.0-0 \
     libcamera-dev libcamera-apps 2>/dev/null || \
 sudo apt install -y \
     build-essential software-properties-common \
@@ -35,7 +36,8 @@ sudo apt install -y \
     libopenblas-dev libatlas-base-dev \
     libjpeg-dev libpng-dev zlib1g-dev \
     libfreetype6-dev pkg-config \
-    libhdf5-dev hdf5-tools || true
+    libhdf5-dev hdf5-tools \
+    libgl1 libglib2.0-0 || true
 
 echo ""
 
