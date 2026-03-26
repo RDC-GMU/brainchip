@@ -5,3 +5,8 @@ akida==2.19.1
 cnn2snn==2.19.1
 akida-models==1.13.1
 numpy
+matplotlib
+Pillow
+flask
+flask-socketio
+psutil

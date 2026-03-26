@@ -1,7 +1,8 @@
 #!/bin/bash
 
 echo "=========================================="
-echo " Brainchip MetaTF Dependency Installer"
+echo " Brainchip AKD1000 Dependency Installer"
+echo " Platform: Raspberry Pi 5"
 echo "=========================================="
 echo ""
 
@@ -12,24 +13,33 @@ REPO_ROOT="$(dirname "$SCRIPT_DIR")"
 REQUIREMENTS="$REPO_ROOT/requirements.txt"
 VENV_DIR="$HOME/akida_env"
 
-IS_JETSON=false
-if uname -r | grep -q "tegra"; then
-    IS_JETSON=true
-    echo "  Detected: NVIDIA Jetson (Tegra)"
-else
-    echo "  Detected: Standard Linux"
-fi
-echo ""
-
 # ──────────────────────────────────────────────
 # Step 1: System packages
 # ──────────────────────────────────────────────
 echo "Step 1: Updating system packages..."
 sudo apt update || true
 sudo apt upgrade -y || true
-sudo apt install -y build-essential software-properties-common
+sudo apt install -y \
+    build-essential software-properties-common \
+    curl wget git \
+    linux-headers-$(uname -r) \
+    libopenblas-dev libatlas-base-dev \
+    libjpeg-dev libpng-dev zlib1g-dev \
+    libfreetype6-dev pkg-config \
+    libhdf5-dev hdf5-tools \
+    libcamera-dev libcamera-apps 2>/dev/null || \
+sudo apt install -y \
+    build-essential software-properties-common \
+    curl wget git \
+    linux-headers-$(uname -r) \
+    libopenblas-dev libatlas-base-dev \
+    libjpeg-dev libpng-dev zlib1g-dev \
+    libfreetype6-dev pkg-config \
+    libhdf5-dev hdf5-tools || true
 
-echo "Step 1.1: Ensuring Python 3.10, 3.11, or 3.12 is available (MetaTF compatibility)..."
+echo ""
+
+echo "Step 1.1: Ensuring Python 3.10, 3.11, or 3.12 is available (MetaTF requirement)..."
 PY_CMD=""
 for py in python3.12 python3.11 python3.10; do
     if command -v "$py" &>/dev/null; then
@@ -39,75 +49,30 @@ for py in python3.12 python3.11 python3.10; do
 done
 
 if [ -z "$PY_CMD" ]; then
-    echo "  Python 3.10-3.12 not found in PATH."
-    echo "  Attempting to install Python 3.12 from standard repos..."
+    echo "  Python 3.10–3.12 not found. Installing Python 3.12..."
     sudo apt install -y python3.12 python3.12-venv python3.12-dev || true
-    
     if command -v python3.12 &>/dev/null; then
         PY_CMD="python3.12"
     else
-        echo "  [INFO] MetaTF 2.19.1 requires Python 3.12 (Kubuntu 25 defaults to 3.13)."
-        echo "  [INFO] Setting up a local Python 3.12 interpreter just for this environment..."
-        
-        LOCAL_PY_DIR="$HOME/.local-python3.12"
-        mkdir -p "$LOCAL_PY_DIR/deb"
-        cd "$LOCAL_PY_DIR/deb"
-        
-        # Download Ubuntu 24.04 (Noble) packages of Python 3.12 to extract locally
-        echo "  Downloading Python 3.12 packages..."
-        wget -q -c http://security.ubuntu.com/ubuntu/pool/main/p/python3.12/python3.12-minimal_3.12.3-1ubuntu0.5_amd64.deb
-        wget -q -c http://security.ubuntu.com/ubuntu/pool/main/p/python3.12/libpython3.12-minimal_3.12.3-1ubuntu0.5_amd64.deb
-        wget -q -c http://security.ubuntu.com/ubuntu/pool/main/p/python3.12/libpython3.12-stdlib_3.12.3-1ubuntu0.5_amd64.deb
-        wget -q -c http://security.ubuntu.com/ubuntu/pool/main/p/python3.12/python3.12-venv_3.12.3-1ubuntu0.5_amd64.deb
-        
-        echo "  Extracting packages locally..."
-        for deb in *.deb; do
-            dpkg -x "$deb" "$LOCAL_PY_DIR/extracted"
-        done
-        
-        # Point PY_CMD to the locally extracted binary
-        # We must set LD_LIBRARY_PATH so it finds its own extracted stdlib
-        export LD_LIBRARY_PATH="$LOCAL_PY_DIR/extracted/usr/lib:${LD_LIBRARY_PATH:-}"
-        export PYTHONPATH="$LOCAL_PY_DIR/extracted/usr/lib/python3.12"
-        
-        PY_CMD="$LOCAL_PY_DIR/extracted/usr/bin/python3.12"
-        cd "$REPO_ROOT"
-        
-        if [ ! -f "$PY_CMD" ]; then
-            echo "  [ERROR] Failed to extract local Python 3.12."
-            exit 1
-        fi
-        echo "  [OK] Local Python 3.12 prepared at $PY_CMD"
+        echo "  [ERROR] Could not install Python 3.12. MetaTF requires Python 3.10–3.12."
+        exit 1
     fi
 fi
 
-echo "  Selected Python interpreter: $PY_CMD"
-# Try to ensure standard venv packages if using system python
-if [[ "$PY_CMD" != *".local-python3.12"* ]]; then
-    sudo apt install -y "${PY_CMD}-venv" "${PY_CMD}-dev" || true
-fi
-
-if [ "$IS_JETSON" = true ]; then
-    echo "  Installing Jetson-specific system dependencies..."
-    sudo apt install -y libhdf5-serial-dev hdf5-tools libjpeg8-dev
-fi
+echo "  Selected Python: $PY_CMD ($($PY_CMD --version))"
+# Ensure venv and dev packages for the selected interpreter
+sudo apt install -y "${PY_CMD}-venv" "${PY_CMD}-dev" || true
 echo ""
 
 # ──────────────────────────────────────────────
 # Step 2: Create virtual environment
-# Note: --system-site-packages is used on Jetson so the venv can
-# access any JetPack system-level Python bindings if needed.
 # ──────────────────────────────────────────────
 echo "Step 2: Setting up Python virtual environment at $VENV_DIR ..."
 
 if [ -d "$VENV_DIR" ]; then
     echo "  Virtual environment already exists. Skipping creation."
 else
-    if [ "$IS_JETSON" = true ]; then
-        $PY_CMD -m venv "$VENV_DIR" --system-site-packages
-    else
-        $PY_CMD -m venv "$VENV_DIR"
-    fi
+    $PY_CMD -m venv "$VENV_DIR"
     echo "  Created: $VENV_DIR"
 fi
 
@@ -122,17 +87,15 @@ echo "Step 3: Upgrading pip..."
 echo ""
 
 # ──────────────────────────────────────────────
-# Step 4: Install TF-Keras + MetaTF
+# Step 4: Install all Python packages
 #
-# The Akida AKD1000 is the ML inference co-processor — it handles all
-# neural network execution in hardware. The host CPU only runs Python
-# and does pre/post-processing. NVIDIA GPU-accelerated TensorFlow is
-# NOT required on Jetson for Akida inference workloads.
-#
-# Standard tf-keras from PyPI works on both Jetson (aarch64) and x86.
+# The AKD1000 is the ML inference co-processor — all neural network
+# execution happens in hardware on the Akida chip. The Pi's CPU only
+# runs Python pre/post-processing. GPU-accelerated TensorFlow is
+# NOT required. Standard tf-keras from PyPI works on aarch64.
 # ──────────────────────────────────────────────
-echo "Step 4: Installing TF-Keras and MetaTF packages..."
-echo "  (Using standard CPU TF — the Akida card handles ML inference)"
+echo "Step 4: Installing Python packages..."
+echo "  (CPU-only tf-keras — AKD1000 handles ML inference)"
 echo ""
 
 if [ -f "$REQUIREMENTS" ]; then
@@ -140,28 +103,27 @@ if [ -f "$REQUIREMENTS" ]; then
 else
     echo "  WARNING: requirements.txt not found at $REQUIREMENTS. Installing manually..."
     "$VENV_PIP" install tf-keras==2.19
-    "$VENV_PIP" install akida==2.19.1
-    "$VENV_PIP" install cnn2snn==2.19.1
-    "$VENV_PIP" install akida-models==1.13.1
+    "$VENV_PIP" install akida==2.19.1 cnn2snn==2.19.1 akida-models==1.13.1
+    "$VENV_PIP" install numpy matplotlib Pillow
+    "$VENV_PIP" install flask flask-socketio psutil
 fi
 
 echo ""
 echo "=========================================="
 echo " Installation complete!"
 echo ""
-echo " Activate your environment before running anything:"
+echo " Activate your environment:"
 echo "   source $VENV_DIR/bin/activate"
 echo ""
 echo " Next steps:"
-if [ "$IS_JETSON" = true ]; then
-    echo "   1. Activate env:         source $VENV_DIR/bin/activate"
-    echo "   2. Install PCIe driver:  ./scripts/install_drivers.sh"
-    echo "   3. Reboot:               sudo reboot"
-    echo "   4. Activate env again:   source $VENV_DIR/bin/activate"
-    echo "   5. Verify hardware:      ./scripts/check_hardware.sh"
-    echo "   6. Run tests:            python3 tests/test_akida.py"
-else
-    echo "   1. Activate env:         source $VENV_DIR/bin/activate"
-    echo "   2. Run tests:            python tests/test_akida.py"
-fi
+echo "   1. Activate env:         source $VENV_DIR/bin/activate"
+echo "   2. Install PCIe driver:  ./scripts/install_drivers.sh"
+echo "   3. Reboot:               sudo reboot"
+echo "   4. Activate env again:   source $VENV_DIR/bin/activate"
+echo "   5. Verify hardware:      ./scripts/check_hardware.sh"
+echo "   6. Run tests:            python3 tests/test_akida.py"
+echo "   7. Object detection:     python3 tests/test_object_detection.py"
+echo "   8. Launch dashboard:     python3 src/app.py"
+echo ""
+echo "   Dashboard: http://$(hostname -I | awk '{print $1}'):5000"
 echo "=========================================="

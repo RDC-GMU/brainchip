@@ -2,6 +2,7 @@
 
 echo "========================================"
 echo " Brainchip Akida PCIe Driver Installer"
+echo " Platform: Raspberry Pi 5"
 echo "========================================"
 echo ""
 
@@ -15,14 +16,7 @@ CLONE_DIR="$HOME/akida_dw_edma"
 # ──────────────────────────────────────────────
 echo "Step 1: Installing build prerequisites..."
 sudo apt update
-if uname -r | grep -q "tegra"; then
-    echo "  Detected NVIDIA Jetson (Tegra). Installing L4T kernel headers..."
-    sudo apt install -y git build-essential nvidia-l4t-kernel-headers dkms
-else
-    echo "  Standard Linux detected. Installing linux-headers..."
-    sudo apt install -y git build-essential linux-headers-$(uname -r) dkms
-fi
-
+sudo apt install -y git build-essential linux-headers-$(uname -r) dkms
 echo ""
 
 # ──────────────────────────────────────────────
@@ -81,7 +75,10 @@ echo ""
 echo "========================================"
 echo " Driver installation complete!"
 echo ""
-echo " Verify your setup:"
+echo " Reboot to load the driver cleanly:"
+echo "   sudo reboot"
+echo ""
+echo " After reboot, verify your setup:"
 echo "   1. Check hardware:  ./scripts/check_hardware.sh"
 echo "   2. Quick CLI check: akida devices"
 echo "========================================"

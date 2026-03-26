@@ -1,107 +1,136 @@
-# Brainchip AKD1000 M.2 Guide
+# Brainchip AKD1000 M.2 — Raspberry Pi 5
 
-This repository contains documentation, scripts, and requirements for setting up and using the **Brainchip AKD1000 M.2** neuromorphic ML accelerator card with the **MetaTF** framework.
+This repository contains documentation, scripts, tests, and a real-time web dashboard for the **Brainchip AKD1000 M.2** neuromorphic ML accelerator running on a **Raspberry Pi 5**.
 
-## Detailed Guides
-- **[NVIDIA Jetson Orin NX Installation Guide](docs/jetson_orin_nano.md)**: Compatibility notes, TensorFlow setup for `aarch64` JetPack, and a full troubleshooting log including PCIe diagnostic procedures.
-- **[Testing Scripts Documentation](docs/test_scripts.md)**: Details all scripts for verifying hardware and troubleshooting.
-- **[Testing Guide](docs/testing_guide.md)**: Step-by-step verification and troubleshooting reference.
+## Hardware
 
-## 1. Hardware Requirements & Installation
+- **Host:** Raspberry Pi 5 (aarch64, Ubuntu 24.04 Server)
+- **Accelerator:** Brainchip AKD1000 M.2 (PCIe, Key-M slot via HAT+)
+- **Interface:** PCIe Gen 2 via the Pi 5's M.2 HAT+
 
-1. **System Interface**:
-   - Compatible with **x86-64** PCs or **aarch64** systems (Raspberry Pi 4, NVIDIA Jetson).
-   - Requires an available **M.2 Key-M** slot (PCIe).
-
-2. **Physical Installation**:
-   - Always power down and unplug before installing new hardware.
-   - Insert the AKD1000 M.2 card into the slot and secure with the standoff screw.
-   - Power on the system.
-
-3. **Verify Connection** (Linux):
-   ```bash
-   lspci | grep Co-processor
-   ```
-   *Expected*: `Co-processor: Brainchip Inc AKD1000 Neural Network Coprocessor [Akida] (rev 01)`
-
-## 2. Driver Installation
-
-Before the AKD1000 can be used, the kernel module must be compiled and loaded.
+Verify the card is visible on the bus:
 
 ```bash
+lspci | grep Co-processor
+# Expected: Co-processor: Brainchip Inc AKD1000 Neural Network Coprocessor [Akida] (rev 01)
+```
+
+## Quick Start
+
+```bash
+# 1. Install system deps + Python venv
+./scripts/install_dependencies.sh
+
+# 2. Activate env
+source ~/akida_env/bin/activate
+
+# 3. Install PCIe driver, then reboot
 ./scripts/install_drivers.sh
+sudo reboot
+
+# 4. After reboot — activate env and verify
+source ~/akida_env/bin/activate
+./scripts/check_hardware.sh
+
+# 5. Run tests
+python3 tests/test_akida.py
+python3 tests/test_object_detection.py
+
+# 6. Launch dashboard
+python3 src/app.py
+# → http://<pi-ip>:5000
 ```
 
-This clones the [Brainchip akida_dw_edma repository](https://github.com/Brainchip-Inc/akida_dw_edma) and runs its `install.sh`. Alternatively, clone and build manually:
+## Repository Structure
+
+```
+brainchip/
+├── src/                        # Web dashboard (Flask + WebSocket)
+│   ├── app.py                  # Dashboard server
+│   └── templates/
+│       └── index.html          # Dashboard UI
+├── scripts/
+│   ├── install_dependencies.sh # System + Python package installer
+│   ├── install_drivers.sh      # PCIe driver (akida_dw_edma) builder
+│   ├── check_hardware.sh       # Full hardware stack verification
+│   ├── diagnose_pcie.sh        # Deep PCIe diagnostics
+│   └── resetpcie.sh            # Safe driver reload (no bus rescan)
+├── tests/
+│   ├── test_akida.py           # Hardware binding test
+│   └── test_object_detection.py # YOLOv2 inference test (PASCAL-VOC)
+├── docs/
+│   ├── testing_guide.md        # Troubleshooting reference
+│   └── test_scripts.md         # Script documentation
+└── requirements.txt
+```
+
+## Software Stack
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `tf-keras` | 2.19 | Keras layer definitions (CPU only — Akida runs inference) |
+| `akida` | 2.19.1 | Hardware HAL for AKD1000 |
+| `cnn2snn` | 2.19.1 | Keras → Akida model conversion |
+| `akida-models` | 1.13.1 | Pre-trained model zoo |
+| `flask` + `flask-socketio` | latest | Dashboard web server |
+| `psutil` | latest | System resource monitoring |
+| `numpy`, `matplotlib`, `Pillow` | latest | Image I/O and visualization |
+
+> **Note:** Python 3.10–3.12 required. MetaTF does not support Python 3.13+.
+
+## Dashboard
+
+The web dashboard provides real-time system monitoring and control:
+
+- **System resources** — CPU, RAM, disk, temperature, uptime, network
+- **Akida hardware status** — PCIe bus, kernel module, device node, MetaTF probe
+- **Quick actions** — run hardware check, Akida test, or object detection from the browser
+- **Interactive console** — shell access with command history
 
 ```bash
-git clone https://github.com/Brainchip-Inc/akida_dw_edma ~/akida_dw_edma
-cd ~/akida_dw_edma && make && sudo ./install.sh
+source ~/akida_env/bin/activate
+python3 src/app.py
 ```
 
-> **Note:** After every kernel update, you must re-run `install_drivers.sh` — the official Brainchip driver does not use DKMS.
+Open `http://<pi-ip>:5000` from any device on the same network.
 
-## 3. Software Environment & Dependencies
+## Tests
 
-MetaTF is the machine learning framework for building, training, quantizing, and running models on Akida hardware.
+| Script | Purpose | Command |
+|--------|---------|---------|
+| `test_akida.py` | Verifies MetaTF imports and hardware binding | `python3 tests/test_akida.py` |
+| `test_object_detection.py` | YOLOv2 inference on PASCAL-VOC (20 classes) | `python3 tests/test_object_detection.py` |
 
-1. **Install System Dependencies**:
-   ```bash
-   ./scripts/install_dependencies.sh
-   ```
+Detection test options:
 
-2. **Python Environment** (Python 3.10–3.12 required):
-   ```bash
-   python -m venv akida_env
-   source akida_env/bin/activate
-   ```
-
-3. **Install Package Requirements**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-   Or manually:
-   ```bash
-   pip install tf-keras==2.19
-   pip install akida==2.19.1 cnn2snn==2.19.1 akida-models==1.13.1
-   ```
-
-## 4. MetaTF Packages Overview
-
-| Package | Purpose |
-|---------|---------|
-| `akida` | Primary hardware interface and HAL for the AKD1000 |
-| `quantizeml` | Quantize CNNs/ViTs to low bit-width for edge execution |
-| `cnn2snn` | Convert Keras/TF models to Akida-compatible format |
-| `akida-models` | Pre-trained, quantized Brainchip model zoo |
-
-## 5. Usage Example
-
-```python
-import akida
-
-available_devices = akida.devices()
-print(f"Found {len(available_devices)} active Akida device(s).")
-
-if available_devices:
-    hardware_device = available_devices[0]
-    print(f"Hardware initialization successful: {hardware_device.desc}")
-else:
-    print("Warning: No hardware found. Falling back to software simulation mode.")
+```bash
+python3 tests/test_object_detection.py --image photo.jpg   # custom image
+python3 tests/test_object_detection.py --threshold 0.2     # lower confidence threshold
+python3 tests/test_object_detection.py --benchmark 100     # FPS benchmark (100 frames)
 ```
 
-## 6. Verifying Your Setup
+## Troubleshooting
 
-Run the hardware check and Python test in sequence:
+### Full hardware check
 
 ```bash
 ./scripts/check_hardware.sh
-python3 tests/test_akida.py
 ```
 
+Verifies PCIe bus, kernel module, device node, MetaTF enumeration, and BAR0 MMIO integrity.
+
+### Deep PCIe diagnostics
+
+```bash
+sudo ./scripts/diagnose_pcie.sh
+```
+
+### Transient DMA errors (`RuntimeError: unexpected transfer len`)
+
+```bash
+./scripts/resetpcie.sh
+```
+
+> **Important:** After every kernel update (`apt upgrade`), re-run `install_drivers.sh` — the driver does not use DKMS persistently across kernel upgrades on the Pi.
+
 See [docs/testing_guide.md](docs/testing_guide.md) for full troubleshooting steps.
-
-## 7. Jetson-Specific Notes
-
-If running on a **Jetson Orin** and experiencing `Connection timed out` errors or `No Akida hardware devices found`, see the comprehensive troubleshooting guide in [docs/jetson_orin_nano.md](docs/jetson_orin_nano.md), which documents all known failure modes and their diagnostics including the x86 cross-test procedure.
