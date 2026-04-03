@@ -1,20 +1,11 @@
-"""
-sockets.py — WebSocket event handlers
-======================================
-All @socketio.on() handlers registered via register_handlers().
-Depends on: system.py (pure helpers), no circular imports.
-"""
-
 import subprocess
 
 from flask_socketio import emit
 
 from system import get_akida_status
 
-# Commands that are never permitted regardless of user input
 _BLOCKED = ("rm -rf /", "mkfs", "dd if=", ":(){", "shutdown", "reboot", "init 0")
 
-# Predefined scripts that can be triggered from the dashboard
 _ALLOWED_SCRIPTS: dict[str, list[str]] = {
     "check_hw":   ["bash", "scripts/check_hardware.sh"],
     "test_akida": ["python3", "tests/test_akida.py"],
@@ -22,20 +13,51 @@ _ALLOWED_SCRIPTS: dict[str, list[str]] = {
 }
 
 
-def register_handlers(socketio, base_dir: str):
-    """Attach all WebSocket event handlers to the given SocketIO instance."""
+def register_handlers(socketio, base_dir: str, camera=None, detector=None):
 
     @socketio.on("connect")
     def on_connect():
         emit("hello", {"status": "ok"})
+        if detector is not None:
+            emit("det_status", _det_status(detector))
 
     @socketio.on("refresh_hw")
     def on_refresh_hw():
         emit("hw", get_akida_status())
 
+    @socketio.on("change_mode")
+    def on_change_mode(data):
+        if detector is not None:
+            detector.mode = data.get("mode", "both")
+            emit("det_status", _det_status(detector, camera))
+
+    @socketio.on("toggle_detection")
+    def on_toggle_detection(data):
+        if camera is None or detector is None:
+            emit("det_status", {"enabled": False, "ready": False, "loading": False,
+                                "backend": "unavailable", "error": "no camera/detector"})
+            return
+
+        enable = bool(data.get("enable", True))
+
+        if enable and detector.mode != "aruco" and not detector.ready and not detector.loading:
+            emit("det_status", {"enabled": False, "ready": False, "loading": True,
+                                "backend": "loading…", "error": None})
+
+            def _load_and_notify():
+                ok = detector.load()
+                if ok or detector.mode == "aruco":
+                    camera.detection_enabled = True
+                socketio.emit("det_status", _det_status(detector, camera))
+
+            socketio.start_background_task(_load_and_notify)
+            return
+
+        camera.detection_enabled = enable if detector.mode == "aruco" else (enable and detector.ready)
+        emit("det_status", _det_status(detector, camera))
+
     @socketio.on("cmd")
     def on_cmd(data):
-        """Execute an arbitrary shell command — with a blocklist guard."""
         cmd = (data.get("c") or "").strip()
         if not cmd:
             return
@@ -56,7 +78,6 @@ def register_handlers(socketio, base_dir: str):
 
     @socketio.on("run_script")
     def on_run_script(data):
-        """Run a pre-approved script and stream its output."""
         script = data.get("s", "")
         argv = _ALLOWED_SCRIPTS.get(script)
         if not argv:
@@ -81,3 +102,16 @@ def register_handlers(socketio, base_dir: str):
             emit("script_r", {"s": script, "o": "Timed out (120 s).", "err": True, "starting": False})
         except Exception as e:
             emit("script_r", {"s": script, "o": str(e), "err": True, "starting": False})
+
+
+def _det_status(detector, camera=None) -> dict:
+    return {
+        "enabled":      camera.detection_enabled if camera else False,
+        "ready":        detector.ready,
+        "loading":      detector.loading,
+        "backend":      detector.backend,
+        "error":        detector.load_error,
+        "inference_ms": round(detector.last_inference_ms, 1),
+        "detections":   detector.last_detections,
+        "mode":         getattr(detector, "mode", "both"),
+    }

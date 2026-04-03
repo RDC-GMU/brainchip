@@ -1,9 +1,4 @@
-"""
-system.py — System and Akida hardware helpers
-==============================================
-All functions are pure (no Flask/SocketIO dependencies) so they can be
-imported anywhere without circular-import risk.
-"""
+
 
 import glob
 import platform
@@ -13,7 +8,6 @@ import psutil
 
 
 def get_cpu_temp() -> float | None:
-    """Read SoC temperature from the thermal sysfs interface."""
     for path in [
         "/sys/class/thermal/thermal_zone0/temp",
         "/sys/devices/virtual/thermal/thermal_zone0/temp",
@@ -27,7 +21,6 @@ def get_cpu_temp() -> float | None:
 
 
 def get_cpu_model() -> str:
-    """Extract CPU model/hardware string from /proc/cpuinfo."""
     try:
         with open("/proc/cpuinfo") as f:
             for line in f:
@@ -50,7 +43,6 @@ def get_system_info() -> dict:
 
 
 def get_akida_status() -> dict:
-    """Probe all four layers of the Akida hardware stack."""
     checks = {
         "pcie":   {"ok": False, "info": ""},
         "module": {"ok": False, "info": ""},
@@ -58,7 +50,7 @@ def get_akida_status() -> dict:
         "akida":  {"ok": False, "info": ""},
     }
 
-    # 1) PCIe bus
+
     try:
         r = subprocess.run(["lspci"], capture_output=True, text=True, timeout=5)
         for ln in r.stdout.splitlines():
@@ -70,7 +62,7 @@ def get_akida_status() -> dict:
     except Exception as e:
         checks["pcie"]["info"] = str(e)
 
-    # 2) Kernel module
+
     try:
         r = subprocess.run(["lsmod"], capture_output=True, text=True, timeout=5)
         for ln in r.stdout.splitlines():
@@ -82,14 +74,14 @@ def get_akida_status() -> dict:
     except Exception as e:
         checks["module"]["info"] = str(e)
 
-    # 3) Device node
+
     devs = glob.glob("/dev/akida*")
     if devs:
         checks["device"] = {"ok": True, "info": ", ".join(devs)}
     else:
         checks["device"]["info"] = "No /dev/akida* nodes"
 
-    # 4) MetaTF / akida Python package
+
     try:
         import akida
         hw = akida.devices()

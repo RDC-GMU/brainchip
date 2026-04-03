@@ -1,11 +1,3 @@
-"""
-camera.py — USB camera capture and MJPEG streaming
-===================================================
-Provides a thread-safe CameraStream and a Flask Blueprint with:
-  GET /video_feed      — MJPEG multipart stream
-  GET /camera_status   — JSON camera state
-"""
-
 import threading
 import time
 
@@ -15,13 +7,8 @@ from flask import Blueprint, Response
 
 camera_bp = Blueprint("camera", __name__)
 
-# ---------------------------------------------------------------------------
-# CameraStream
-# ---------------------------------------------------------------------------
 
 class CameraStream:
-    """Thread-safe MJPEG capture from a USB camera via OpenCV."""
-
     def __init__(self, device: int = 0, width: int = 640, height: int = 480, fps: int = 30):
         self.device = device
         self.width = width
@@ -29,10 +16,16 @@ class CameraStream:
         self.fps = fps
         self._cap: cv2.VideoCapture | None = None
         self._frame: bytes | None = None
+        self._raw_bgr: np.ndarray | None = None
         self._lock = threading.Lock()
         self._running = False
         self._thread: threading.Thread | None = None
         self.error: str | None = None
+        self.detection_enabled: bool = False
+        self._detector = None
+
+    def set_detector(self, detector):
+        self._detector = detector
 
     def start(self) -> bool:
         self._cap = cv2.VideoCapture(self.device)
@@ -49,6 +42,7 @@ class CameraStream:
         return True
 
     def _capture_loop(self):
+        last_time = time.perf_counter()
         while self._running:
             if self._cap is None or not self._cap.isOpened():
                 break
@@ -56,7 +50,22 @@ class CameraStream:
             if not ret:
                 time.sleep(0.05)
                 continue
-            ok, jpeg = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 75])
+
+            with self._lock:
+                self._raw_bgr = frame.copy()
+
+            t_now = time.perf_counter()
+            fps = 1.0 / (t_now - last_time + 1e-6)
+            last_time = t_now
+
+            if self.detection_enabled and self._detector is not None and (self._detector.ready or getattr(self._detector, "mode", "") == "aruco"):
+                annotated = self._detector.annotate_frame(frame)
+            else:
+                annotated = frame
+
+            cv2.putText(annotated, f"FPS: {fps:.1f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
+
+            ok, jpeg = cv2.imencode(".jpg", annotated, [cv2.IMWRITE_JPEG_QUALITY, 75])
             if ok:
                 with self._lock:
                     self._frame = jpeg.tobytes()
@@ -64,6 +73,10 @@ class CameraStream:
     def get_frame(self) -> bytes | None:
         with self._lock:
             return self._frame
+
+    def get_raw_bgr(self) -> np.ndarray | None:
+        with self._lock:
+            return self._raw_bgr.copy() if self._raw_bgr is not None else None
 
     def stop(self):
         self._running = False
@@ -75,10 +88,6 @@ class CameraStream:
     def ok(self) -> bool:
         return self._running and self._cap is not None and self._cap.isOpened()
 
-
-# ---------------------------------------------------------------------------
-# No-signal placeholder
-# ---------------------------------------------------------------------------
 
 _NO_SIGNAL_JPEG: bytes | None = None
 
@@ -98,16 +107,10 @@ def _make_no_signal_frame() -> bytes:
     return _NO_SIGNAL_JPEG
 
 
-# ---------------------------------------------------------------------------
-# Blueprint routes
-# Note: camera instance is injected by app.py via init_camera()
-# ---------------------------------------------------------------------------
-
 _camera: CameraStream | None = None
 
 
 def init_camera(cam: CameraStream):
-    """Bind a CameraStream instance to the blueprint routes."""
     global _camera
     _camera = cam
 

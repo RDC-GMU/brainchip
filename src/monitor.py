@@ -1,9 +1,4 @@
-"""
-monitor.py — Background system metrics broadcaster
-===================================================
-Runs as a SocketIO background task, emitting 'sys' events every 2 seconds
-with CPU, memory, disk, temperature, uptime, network, and camera state.
-"""
+
 
 import time
 
@@ -13,7 +8,6 @@ from system import get_cpu_temp
 
 
 def start_monitor(socketio, camera):
-    """Register and start the background monitoring task."""
     socketio.start_background_task(_monitor_loop, socketio, camera)
 
 

@@ -41,29 +41,6 @@ python3 src/app.py
 # → http://<pi-ip>:5000
 ```
 
-## Repository Structure
-
-```
-brainchip/
-├── src/                        # Web dashboard (Flask + WebSocket)
-│   ├── app.py                  # Dashboard server
-│   └── templates/
-│       └── index.html          # Dashboard UI
-├── scripts/
-│   ├── install_dependencies.sh # System + Python package installer
-│   ├── install_drivers.sh      # PCIe driver (akida_dw_edma) builder
-│   ├── check_hardware.sh       # Full hardware stack verification
-│   ├── diagnose_pcie.sh        # Deep PCIe diagnostics
-│   └── resetpcie.sh            # Safe driver reload (no bus rescan)
-├── tests/
-│   ├── test_akida.py           # Hardware binding test
-│   └── test_object_detection.py # YOLOv2 inference test (PASCAL-VOC)
-├── docs/
-│   ├── testing_guide.md        # Troubleshooting reference
-│   └── test_scripts.md         # Script documentation
-└── requirements.txt
-```
-
 ## Software Stack
 
 | Package | Version | Purpose |

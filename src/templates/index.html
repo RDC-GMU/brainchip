@@ -24,7 +24,7 @@ pre{margin:10px 0;white-space:pre-wrap}
 button:disabled{opacity:.5;cursor:not-allowed}
 iconify-icon{display:inline-block;vertical-align:middle;line-height:1}
 
-/* ── Layout ─────────────────────────────────────── */
+
 .dashboard-grid{display:flex;flex-direction:column;gap:20px;align-items:flex-start;width:100%}
 .column-main{width:100%;display:flex;flex-direction:column;gap:20px;overflow:hidden}
 .column-side{width:100%;display:flex;flex-direction:column;gap:20px;overflow:hidden}
@@ -34,7 +34,7 @@ iconify-icon{display:inline-block;vertical-align:middle;line-height:1}
   .column-side{width:auto;flex:1.5}
 }
 
-/* ── Components ─────────────────────────────────── */
+
 .config-category{padding:15px;background:#fff;border:1px solid #000}
 .config-category h2{margin-top:0;margin-bottom:12px;font-size:1.25rem;border-bottom:1px solid #000;padding-bottom:4px;display:flex;align-items:center;gap:8px}
 .config-category h2 iconify-icon{font-size:1.1rem}
@@ -54,7 +54,7 @@ iconify-icon{display:inline-block;vertical-align:middle;line-height:1}
   display:inline-flex;align-items:center;gap:6px}
 .edit-btn:hover{background:#d0d0d0}
 
-/* ── System bars ─────────────────────────────────── */
+
 .sys-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}
 @media(max-width:600px){.sys-grid{grid-template-columns:1fr}}
 .sys-label{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px}
@@ -65,7 +65,7 @@ iconify-icon{display:inline-block;vertical-align:middle;line-height:1}
 .sys-bar-warn{background:#c8a000}
 .sys-bar-crit{background:#cc0000}
 
-/* ── Camera ─────────────────────────────────────── */
+
 .camera-wrap{position:relative;background:#1a1a1a;border:1px solid #000;line-height:0}
 .camera-wrap img{width:100%;height:auto;display:block;max-height:360px;object-fit:contain}
 .camera-badge{position:absolute;top:6px;left:6px;font-size:.7rem;font-weight:700;padding:2px 8px;
@@ -76,7 +76,7 @@ iconify-icon{display:inline-block;vertical-align:middle;line-height:1}
 .cam-dot.live{animation:blink 1.2s step-end infinite}
 @keyframes blink{50%{opacity:0}}
 
-/* ── Console ─────────────────────────────────────── */
+
 .console-box{border:1px solid #000;background:#f8f8f8;font-family:inherit;font-size:13px}
 .console-output{height:240px;overflow-y:auto;padding:10px;white-space:pre-wrap;word-break:break-all}
 .console-output .console-cmd{color:#006400}
@@ -92,7 +92,7 @@ iconify-icon{display:inline-block;vertical-align:middle;line-height:1}
   display:flex;align-items:center;gap:5px}
 .console-send:hover{background:#d0d0d0}
 
-/* ── Actions grid ────────────────────────────────── */
+
 .actions-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .action-btn{padding:10px 8px;font-size:.8rem;font-weight:700;cursor:pointer;
   border:1px solid #000;background:#e0e0e0;font-family:inherit;text-align:center;
@@ -100,23 +100,36 @@ iconify-icon{display:inline-block;vertical-align:middle;line-height:1}
 .action-btn:hover:not(:disabled){background:#d0d0d0}
 .action-btn.running{background:#ffe066;cursor:wait}
 
-/* ── Status pill ─────────────────────────────────── */
+
 .pill{display:inline-block;padding:2px 8px;font-size:.75rem;font-weight:700;border:1px solid}
 .pill-ok{color:#15803d;border-color:#15803d;background:#dcfce7}
 .pill-fail{color:#dc2626;border-color:#dc2626;background:#fef2f2}
 
-/* ── Misc ────────────────────────────────────────── */
+
 .status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
 .status-dot.on{background:#15803d;box-shadow:0 0 4px #15803d}
 .status-dot.off{background:#dc2626;box-shadow:0 0 4px #dc2626}
 .meta-row{display:flex;gap:20px;flex-wrap:wrap;font-size:.8rem;color:#555;margin-top:4px}
 .script-output{margin-top:10px;padding:10px;border:1px solid #000;background:#f8f8f8;
   max-height:300px;overflow-y:auto;white-space:pre-wrap;font-size:12px}
+
+.det-bar{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding:8px 10px;
+  border-top:1px solid #000;background:#f0f0f0;font-size:.75rem}
+.det-toggle{padding:5px 14px;font-size:.75rem;font-weight:700;cursor:pointer;
+  border:1px solid #000;font-family:inherit;transition:background .15s,color .15s;
+  display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.det-toggle.off{background:#e0e0e0;color:#000}
+.det-toggle.on{background:#000;color:#fff}
+.det-toggle.loading{background:#c8a000;color:#fff;cursor:wait}
+.det-stat{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.det-stat b{font-weight:700}
+.det-backend{margin-left:auto;color:#777;font-size:.7rem;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;max-width:220px}
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
+
 <div class="header-container">
   <h1>
     <iconify-icon icon="mdi:hexagon-outline" style="font-size:1.6rem"></iconify-icon>
@@ -132,10 +145,10 @@ iconify-icon{display:inline-block;vertical-align:middle;line-height:1}
 </div>
 <hr>
 
-<!-- GRID -->
+
 <div class="dashboard-grid">
 
-<!-- MAIN COLUMN -->
+
 <div class="column-main">
 
   <!-- Camera Feed -->
@@ -150,6 +163,41 @@ iconify-icon{display:inline-block;vertical-align:middle;line-height:1}
         <div class="cam-dot {% if cam_ok %}live{% endif %}"></div>
         <span id="cam-label">{% if cam_ok %}LIVE · /dev/video0{% else %}NO SIGNAL{% endif %}</span>
       </div>
+    </div>
+    <div class="det-bar" id="det-bar">
+      <button class="det-toggle off" id="det-toggle-btn" onclick="toggleDetection()">
+        <iconify-icon icon="mdi:eye-off"></iconify-icon>
+        <span id="det-toggle-label">Detection OFF</span>
+      </button>
+      <select id="det-mode-select" class="det-toggle off" onchange="changeMode()" style="outline:none; cursor:pointer;" title="Select Detection Mode">
+        <option value="both">Akida + Aruco</option>
+        <option value="yolo">Akida Only</option>
+        <option value="aruco">Aruco Only</option>
+      </select>
+      <span class="det-stat" id="det-fps-stat" style="display:none">
+        <iconify-icon icon="mdi:speedometer"></iconify-icon>
+        <span id="det-fps">—</span> FPS
+      </span>
+      <span class="det-stat" id="det-ms-stat" style="display:none">
+        <iconify-icon icon="mdi:timer-outline"></iconify-icon>
+        <span id="det-ms">—</span> ms
+      </span>
+      <span class="det-stat" id="det-count-stat" style="display:none">
+        <iconify-icon icon="mdi:tag-multiple-outline"></iconify-icon>
+        <b id="det-count">0</b> objects
+      </span>
+      <span class="det-backend" id="det-backend"></span>
+    </div>
+  </div>
+
+  <!-- Live Map -->
+  <div class="config-category">
+    <h2>
+      <iconify-icon icon="mdi:map-marker-path"></iconify-icon>
+      LIVE OCCUPANCY GRID (UAV + UGV FUSION)
+    </h2>
+    <div style="background:#1a1a1a; padding:15px; display:flex; justify-content:center; align-items:center;">
+       <canvas id="map-canvas" width="60" height="60" style="background:#fff; border:1px solid #555; image-rendering: pixelated; width:100%; max-width:360px; height:auto;"></canvas>
     </div>
   </div>
 
@@ -232,7 +280,7 @@ iconify-icon{display:inline-block;vertical-align:middle;line-height:1}
 
 </div><!-- /column-main -->
 
-<!-- SIDE COLUMN -->
+
 <div class="column-side">
 
   <!-- Quick Actions -->
@@ -306,7 +354,7 @@ iconify-icon{display:inline-block;vertical-align:middle;line-height:1}
 </div>
 
 <script>
-/* ── Utilities ─────────────────────────────────── */
+
 function fmtB(b){
   if(b<1024)return b+' B';
   if(b<1048576)return(b/1024).toFixed(1)+' KB';
@@ -320,14 +368,14 @@ function fmtUp(s){
 function barClass(pct){return pct>85?'sys-bar sys-bar-crit':pct>60?'sys-bar sys-bar-warn':'sys-bar'}
 function $(id){return document.getElementById(id)}
 
-/* ── Button label lookup (no emojis) ───────────── */
+
 const BTN_LABELS = {
   check_hw:   {icon:'mdi:cog',   text:'Check Hardware'},
   test_akida: {icon:'mdi:flash', text:'Test Akida'},
   detect:     {icon:'mdi:eye',   text:'Run Detection'},
 };
 
-/* ── Socket.IO ─────────────────────────────────── */
+
 const sock=io({reconnectionDelay:1000,reconnectionAttempts:Infinity});
 sock.on('connect',()=>{
   $('ws-status').innerHTML='<span class="status-dot on"></span><span class="connected">CONNECTED</span>';
@@ -336,7 +384,7 @@ sock.on('disconnect',()=>{
   $('ws-status').innerHTML='<span class="status-dot off"></span><span class="error">DISCONNECTED</span>';
 });
 
-/* ── System updates ────────────────────────────── */
+
 sock.on('sys',d=>{
   $('cpu-val').textContent=d.cpu_all.toFixed(0)+'%';
   const cb=$('cpu-bar');cb.style.width=d.cpu_all+'%';cb.className=barClass(d.cpu_all);
@@ -372,7 +420,86 @@ sock.on('sys',d=>{
   }
 });
 
-/* ── Hardware refresh ──────────────────────────── */
+let _detEnabled = false;
+function toggleDetection(){
+  _detEnabled = !_detEnabled;
+  const btn=$('det-toggle-btn');
+  btn.className='det-toggle loading';
+  btn.querySelector('#det-toggle-label').textContent='Loading…';
+  btn.disabled=true;
+  sock.emit('toggle_detection',{enable:_detEnabled});
+}
+function changeMode(){
+  sock.emit('change_mode', {mode: $('det-mode-select').value});
+}
+sock.on('det_status',d=>{
+  _detEnabled = d.enabled;
+  if(d.mode) $('det-mode-select').value = d.mode;
+  const btn=$('det-toggle-btn');
+  btn.disabled = d.loading;
+  if(d.loading){
+    btn.className='det-toggle loading';
+    btn.querySelector('iconify-icon').setAttribute('icon','mdi:loading');
+    btn.querySelector('iconify-icon').style.animation='spin 1s linear infinite';
+    $('det-toggle-label').textContent='Loading model…';
+  } else if(d.enabled){
+    btn.className='det-toggle on';
+    btn.querySelector('iconify-icon').setAttribute('icon','mdi:eye');
+    btn.querySelector('iconify-icon').style.animation='';
+    $('det-toggle-label').textContent='Detection ON';
+    $('det-fps-stat').style.display='';
+    $('det-ms-stat').style.display='';
+    $('det-count-stat').style.display='';
+  } else {
+    btn.className='det-toggle off';
+    btn.querySelector('iconify-icon').setAttribute('icon','mdi:eye-off');
+    btn.querySelector('iconify-icon').style.animation='';
+    $('det-toggle-label').textContent='Detection OFF';
+    $('det-fps-stat').style.display='none';
+    $('det-ms-stat').style.display='none';
+    $('det-count-stat').style.display='none';
+  }
+  if(d.inference_ms>0){
+    $('det-ms').textContent=d.inference_ms.toFixed(0);
+    $('det-fps').textContent=(1000/d.inference_ms).toFixed(1);
+  } else {
+    $('det-ms').textContent='—';
+    $('det-fps').textContent='—';
+  }
+  $('det-count').textContent=d.detections||0;
+  $('det-backend').textContent=d.backend||'';
+  if(d.error) $('det-backend').textContent='Error: '+d.error;
+});
+
+sock.on('map_data', d => {
+  const canvas = $('map-canvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const s = d.size;
+  
+  // Our canvas intrinsic size is matching the matrix size
+  // So we draw 1x1 pixels and let CSS scale it with image-rendering: pixelated.
+  const imgData = ctx.createImageData(s, s);
+  for(let i = 0; i < d.grid.length; i++) {
+    const val = d.grid[i];
+    const idx = i * 4;
+    // Obstacles are Red, free space is light grey
+    if(val > 0) {
+      imgData.data[idx] = 220;     // R
+      imgData.data[idx+1] = 38;    // G
+      imgData.data[idx+2] = 38;    // B
+      imgData.data[idx+3] = 255;   // A
+    } else {
+      imgData.data[idx] = 245;
+      imgData.data[idx+1] = 245;
+      imgData.data[idx+2] = 245;
+      imgData.data[idx+3] = 255;
+    }
+  }
+  ctx.putImageData(imgData, 0, 0);
+});
+
+
 function refreshHW(){sock.emit('refresh_hw');}
 sock.on('hw',d=>{
   const tb=$('hw-table').querySelector('tbody');
@@ -384,7 +511,7 @@ sock.on('hw',d=>{
   });
 });
 
-/* ── Console ───────────────────────────────────── */
+
 let cmdHist=[],histIdx=-1;
 const cIn=$('console-in'),cOut=$('console-out');
 
@@ -409,7 +536,7 @@ function appendConsole(text,cls){
   cOut.appendChild(s);cOut.scrollTop=cOut.scrollHeight;
 }
 
-/* ── Script runner ─────────────────────────────── */
+
 function runScript(btn){
   const s=btn.dataset.script;if(!s)return;
   document.querySelectorAll('.action-btn').forEach(b=>b.disabled=true);
@@ -436,12 +563,12 @@ sock.on('script_r',d=>{
   }
 });
 
-/* ── Spin animation for loading icon ───────────── */
+
 const st=document.createElement('style');
 st.textContent='@keyframes spin{to{transform:rotate(360deg)}}';
 document.head.appendChild(st);
 
-/* ── Clock ─────────────────────────────────────── */
+
 setInterval(()=>{$('clock').textContent=new Date().toLocaleTimeString()},1000);
 $('clock').textContent=new Date().toLocaleTimeString();
 </script>
